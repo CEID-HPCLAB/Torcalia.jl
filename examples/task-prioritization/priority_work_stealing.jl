@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Task Prioritazion and Work Stealing in torcjulia
+Example: Task Prioritazion and Work Stealing in Torcalia
 
-Description: This example demonstrates torcjulia's priority-based task scheduling when work stealing is enabled. The runtime maintains 
+Description: This example demonstrates Torcalia's priority-based task scheduling when work stealing is enabled. The runtime maintains 
              separate queues for different priority levels, and work stealing prioritizes high-priority tasks when dynamically 
              redistributing work among idle workers.
 
@@ -36,19 +36,19 @@ Workflow:
 - 25 priority tasks with random priorities are submitted second.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3 priority_work_stealing.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3 priority_work_stealing.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3,0 priority_work_stealing.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 priority_work_stealing.jl
 """
 
-using torcjulia
+using Torcalia
 
 using Crayons, Random
 
-function priority_task_func(i::Int, p::torcjulia.TaskPriorityLevel)
-    color = p == torcjulia.TaskPriority.high ? :green :
-            p == torcjulia.TaskPriority.medium ? :yellow : :cyan
+function priority_task_func(i::Int, p::Torcalia.TaskPriorityLevel)
+    color = p == Torcalia.TaskPriority.high ? :green :
+            p == Torcalia.TaskPriority.medium ? :yellow : :cyan
     
     println(Crayon(foreground = color)("Priority task $i [$(p.level)] started."))
     
@@ -70,27 +70,27 @@ function main()
     
     num_generic_tasks = 15; num_priority_tasks = 25
 
-    torcjulia.enable_stealing()
+    Torcalia.enable_stealing()
 
-    priorities = [torcjulia.TaskPriority.low, torcjulia.TaskPriority.medium, torcjulia.TaskPriority.high]
+    priorities = [Torcalia.TaskPriority.low, Torcalia.TaskPriority.medium, Torcalia.TaskPriority.high]
 
-    tasks = torcjulia.Future[]
+    tasks = Torcalia.Future[]
 
     println(Crayon(foreground = :magenta)("Submitting $num_generic_tasks general-purpose tasks (default low priority)."))
     
     for i in 1:num_generic_tasks
-        push!(tasks, torcjulia.submit(generic_task_func, i))
+        push!(tasks, Torcalia.submit(generic_task_func, i))
     end
 
     println(Crayon(foreground = :magenta)("Submitting $num_priority_tasks priority tasks with random priorities."))
    
     for (i, p) in enumerate(rand(priorities, num_priority_tasks))
-        push!(tasks, torcjulia.submit(priority_task_func, i, p; priority = p))
+        push!(tasks, Torcalia.submit(priority_task_func, i, p; priority = p))
     end
 
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
     
     println(Crayon(foreground = :magenta)("All tasks completed successfully."))
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

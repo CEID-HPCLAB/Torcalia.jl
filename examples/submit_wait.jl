@@ -1,37 +1,37 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Submit-Wait Pattern in torcjulia
+Example: Submit-Wait Pattern in Torcalia
 
-Description: This example demonstrates the submit-wait pattern in torcjulia. The master process (rank 0) submits 10 tasks to compute 
+Description: This example demonstrates the submit-wait pattern in Torcalia. The master process (rank 0) submits 10 tasks to compute 
              the cube of integers from 1 to 10, then waits for their completion. While waiting, the master's main thread 
              actively participates in executing tasks rather than remaining idle. 
 
 Notes: The example also demonstrates `submit_wait()`, which submits a task, waits for it to complete, and returns its result.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2 submit_wait.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2 submit_wait.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2,0 submit_wait.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 submit_wait.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int)::Int
     x^3
@@ -44,12 +44,12 @@ function main()
     
     println("Submitting $ntasks tasks.")
     
-    tasks = [torcjulia.submit(work, x) for x in data]
+    tasks = [Torcalia.submit(work, x) for x in data]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
     for (i, task) in enumerate(tasks)
-        res = torcjulia.result(task)
+        res = Torcalia.result(task)
         println("Task $i: $(data[i])³ = $res.")
     end
 
@@ -57,11 +57,11 @@ function main()
     
     println("Submitting a task and waiting for it to complete using submit-wait.")
      
-    res = torcjulia.submit_wait(work, j)
+    res = Torcalia.submit_wait(work, j)
 
     println("Task $j: $(j)³ = $res.")
 
     println("All tasks completed successfully.")
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

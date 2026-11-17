@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Weighted Round-Robin (WRR) Scheduling Policy in torcjulia
+Example: Weighted Round-Robin (WRR) Scheduling Policy in Torcalia
 
-Description: This examples demonstrates torcjulia's weighted round-robin scheduling policy, where tasks are distributed across nodes 
+Description: This examples demonstrates Torcalia's weighted round-robin scheduling policy, where tasks are distributed across nodes 
              proportionally based on user-defined weights. This approach is particularly useful in heterogeneous computing environments.
 
 Notes:
@@ -47,19 +47,19 @@ Final distribution of tasks across MPI nodes:
     └────────┴────────┴────────────────────────┴─────────┴──────┘
 
 Julia < v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3 weighted-round-robin.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3 weighted-round-robin.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3,0 weighted-round-robin.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 weighted-round-robin.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int)::Int
     y = x^2
     
     println("Work: Input = $x, Output = $y \
-             on worker thread $(torcjulia.worker_local_id()) of node $(torcjulia.node_id()).")
+             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
 
     y
 end
@@ -71,18 +71,18 @@ function main()
     
     weights = [1, 1, 2, 3]
 
-    torcjulia.set_scheduling_policy(:WRR,  weights)
+    Torcalia.set_scheduling_policy(:WRR,  weights)
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
-    torcjulia.wait(tasks)
+    tasks = [Torcalia.submit(work, x) for x in inputs]
+    Torcalia.wait(tasks)
 
     for (i, task) in enumerate(tasks)
         x = inputs[i]
         
-        y = torcjulia.result(task)
+        y = Torcalia.result(task)
         
         println("Task $i: $(x)² = $y.")
     end
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

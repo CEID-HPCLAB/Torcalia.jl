@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -18,7 +18,7 @@
 """
 Example: Parallel Reduce Algorithmic Skeleton
 
-Description: Demonstrates the usage of the parallel `reduce` algorithmic skeleton in torcjulia.
+Description: Demonstrates the usage of the parallel `reduce` algorithmic skeleton in Torcalia.
 
 Notes: The parallel `reduce` skeleton applies an associative reduction operation across matrix or vector elements. 
        For matrices, it supports different reduction directions (:row or :column), and two modes: "1d" (reduces 
@@ -43,13 +43,13 @@ Matrix (1d mode): `reduce(+, A, direction = :row)` → `[row1_sum, row2_sum, row
 Matrix (2d mode): `reduce(+, A)` → matrix → vector → scalar
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3 reduce.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3 reduce.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3,0 reduce.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 reduce.jl
 """
 
-using torcjulia
+using Torcalia
 
 using Random
    
@@ -64,7 +64,7 @@ function main()
     println("Vector size: $(length(vec)).")
     println("Matrix size: $(size(mat)).")
     
-    result_vec = torcjulia.reduce(
+    result_vec = Torcalia.reduce(
         work,
         vec;
         args = (10,),
@@ -73,7 +73,7 @@ function main()
 
     @assert result_vec == Base.reduce((a, b) -> work(a, b, 10), vec)
     
-    result_1d_col = torcjulia.reduce(
+    result_1d_col = Torcalia.reduce(
         work,
         mat;
         args = (5,),
@@ -83,7 +83,7 @@ function main()
     
     @assert result_1d_col == [Base.reduce((a, b) -> work(a, b, 5), mat[:, i]) for i in 1:size(mat, 2)]
     
-    result_1d_row = torcjulia.reduce(
+    result_1d_row = Torcalia.reduce(
         work,
         mat;
         args = (-2,),
@@ -93,7 +93,7 @@ function main()
     
     @assert result_1d_row == [Base.reduce((a, b) -> work(a, b, -2), mat[i, :]) for i in 1:size(mat, 1)]
     
-    result_2d = torcjulia.reduce(
+    result_2d = Torcalia.reduce(
         work,
         mat;
         args = (8,),
@@ -104,4 +104,4 @@ function main()
     @assert result_2d == Base.reduce((a, b) -> work(a, b, 8), [Base.reduce((a, b) -> work(a, b, 8), mat[:, i]) for i in 1:size(mat, 2)])
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

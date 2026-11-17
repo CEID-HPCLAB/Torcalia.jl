@@ -1,28 +1,28 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Custom Scheduling Policies in torcjulia
+Example: Custom Scheduling Policies in Torcalia
 
-Description: This example demonstrates torcjulia's support for custom scheduling policies, where users can define their own task distribution strategies.
+Description: This example demonstrates Torcalia's support for custom scheduling policies, where users can define their own task distribution strategies.
 
 Note: 
 - The custom scheduling policy is set via the `distribution_policy` argument in `submit()`.
-- The custom scheduling function must return a valid node index (0 to num_nodes - 1). If an invalid value is returned, torcjulia falls back to Round-Robin.
+- The custom scheduling function must return a valid node index (0 to num_nodes - 1). If an invalid value is returned, Torcalia falls back to Round-Robin.
 
 In this example, 12 tasks are submitted to compute the square of integers from 1 to 12. The custom scheduling function distributes tasks across 4 MPI nodes
 based on their index, assigning even-indexed tasks to nodes 0 and 1, and odd-indexed tasks to nodes 2 and 3 in a round-robin fashion, 
@@ -45,19 +45,19 @@ Final distribution of tasks across MPI nodes:
     └────────┴──────────────┴─────────┴──────┘
 
 Julia < v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3 custom.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3 custom.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3,0 custom.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 custom.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int)::Int
     y = x^2
     
     println("Work: Input = $x, Output = $y \
-             on worker thread $(torcjulia.worker_local_id()) of node $(torcjulia.node_id()).")
+             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
 
     y
 end
@@ -75,17 +75,17 @@ function main()
     
     inputs = 1:ntasks
     
-    tasks = [torcjulia.submit(work, x; distribution_policy = (custom_scheduler, x)) for x in inputs]
+    tasks = [Torcalia.submit(work, x; distribution_policy = (custom_scheduler, x)) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
     for (i, task) in enumerate(tasks)
         x = inputs[i]
         
-        y = torcjulia.result(task)
+        y = Torcalia.result(task)
         
         println("Task $i: $(x)² = $y.")
     end
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

@@ -4,7 +4,7 @@
 # using Dagger as the underlying AMT runtime system. 
 # It runs the experiment with different numbers of Julia processes,
 # using 3 Julia threads per process, except when running with a single
-# Julia process, in which case 2 Julia threads are used to ensure a fair comparison with torcjulia.
+# Julia process, in which case 2 Julia threads are used to ensure a fair comparison with Torcalia.
 # For each configuration, it performs 5 benchmark runs and records the median wall-clock time in 
 # a corresponding file (experiments/results/dagger/mandelbrot-set.txt).
 

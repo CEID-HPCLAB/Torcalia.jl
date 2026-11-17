@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: SPMD Execution Model with Direct MPI Collective Operations (Calls) in torcjulia
+Example: SPMD Execution Model with Direct MPI Collective Operations (Calls) in Torcalia
 
-Description: This example demonstrates combining torcjulia's SPMD execution model with direct MPI collective operations (calls).
+Description: This example demonstrates combining Torcalia's SPMD execution model with direct MPI collective operations (calls).
 
 Workflow:
     1. The root node (rank 0) initializes array A with values [0, 100, 200, ...].
@@ -29,20 +29,20 @@ Workflow:
 Requirements: 2+ MPI processes, 1+ worker thread(s) per process.
 
 Julia < v1.12
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 2 spmd_bcast_reduce.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2 spmd_bcast_reduce.jl
 
 Julia >= v1.12
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 2,0 spmd_bcast_reduce.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2,0 spmd_bcast_reduce.jl
 """
 
-using torcjulia
+using Torcalia
 
 using MPI
 
-nodes = torcjulia.num_nodes()
+nodes = Torcalia.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(torcjulia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
@@ -55,7 +55,7 @@ function bcast_task()
 end
 
 function local_computation()
-    node_id = torcjulia.node_id()
+    node_id = Torcalia.node_id()
     
     A .*= node_id
     
@@ -63,7 +63,7 @@ function local_computation()
 end
 
 function reduce_task()
-    node_id = torcjulia.node_id()
+    node_id = Torcalia.node_id()
 
     comm = MPI.COMM_WORLD
     result = MPI.Allreduce(A, +, comm)
@@ -72,7 +72,7 @@ function reduce_task()
 end
 
 function main()
-    println("Running with $(torcjulia.num_nodes()) MPI nodes.")
+    println("Running with $(Torcalia.num_nodes()) MPI nodes.")
 
     for i in 1:N
         A[i] = 100 * (i - 1)
@@ -80,11 +80,11 @@ function main()
     
     println("Node 0 (initialization): A = $A.")
 
-    torcjulia.spmd(bcast_task)
-    torcjulia.spmd(local_computation)
-    torcjulia.spmd(reduce_task)
+    Torcalia.spmd(bcast_task)
+    Torcalia.spmd(local_computation)
+    Torcalia.spmd(reduce_task)
     
     println("All nodes completed their assigned tasks successfully.")
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

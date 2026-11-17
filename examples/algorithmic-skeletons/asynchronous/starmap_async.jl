@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -18,7 +18,7 @@
 """
 Example: Asynchronous Parallel Starmap Algorithmic Skeleton
 
-Description: Demonstrates the usage of the asynchronous parallel `starmap_async` algorithmic skeleton in torcjulia.
+Description: Demonstrates the usage of the asynchronous parallel `starmap_async` algorithmic skeleton in Torcalia.
              `starmap_async` corresponds to the asynchronous variant of the `starmap` algorithmic skeleton.
 
 Notes: Unlike `starmap` which blocks execution until all tasks complete, `starmap_async` returns immediately with an AsyncResult handle, 
@@ -53,13 +53,13 @@ Key difference from `map_async`:
 - `starmap_async(f, [(a,b), (c,d)])` → `[f(a,b), f(c,d)]` (unpacks tuple elements as separate args)
 
 Julia < v1.12
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 5 starmap_async.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5 starmap_async.jl
 
 Julia >= v1.12
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 5,0 starmap_async.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 starmap_async.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int, y::Int; scale::Float64 = 1.0, verbose::Bool = true)::Float64
     sleep(rand(0.1:0.2:1.3))  
@@ -92,30 +92,30 @@ function main()
     # Set verbose to false to reduce output clutter
     verbose = true
     
-    torcjulia.enable_stealing()
+    Torcalia.enable_stealing()
 
     println("[Work Stealing] -> Enabled.")
 
-    fut1 = torcjulia.starmap_async(work, data1; verbose = verbose,
+    fut1 = Torcalia.starmap_async(work, data1; verbose = verbose,
         callback = r -> println("[callback] -> Data batch 1 complete - Result: $r."))
 
-    fut2 = torcjulia.starmap_async(work, data2; scale = 2.0, verbose = verbose,
+    fut2 = Torcalia.starmap_async(work, data2; scale = 2.0, verbose = verbose,
         callback = r -> println("[Callback] -> Data batch 2 complete - Result: $r."))
 
-    !torcjulia.ready(fut1) ? println("Waiting for data batch 1...") : nothing
+    !Torcalia.ready(fut1) ? println("Waiting for data batch 1...") : nothing
     
-    results1 = torcjulia.get(fut1)
+    results1 = Torcalia.get(fut1)
 
-    !torcjulia.ready(fut2) ? println("Waiting for data batch 2...") : nothing
+    !Torcalia.ready(fut2) ? println("Waiting for data batch 2...") : nothing
     
-    results2 = torcjulia.get(fut2)
+    results2 = Torcalia.get(fut2)
 
     pairs = collect(zip(results1, results2))
     
-    fut3 = torcjulia.starmap_async(aggregate, pairs; verbose = verbose,
+    fut3 = Torcalia.starmap_async(aggregate, pairs; verbose = verbose,
         callback = r -> println("[Callback] -> Aggregation complete - Result: $r."))
 
-    results3 = torcjulia.get(fut3); total_score = Base.sum(results3)
+    results3 = Torcalia.get(fut3); total_score = Base.sum(results3)
 
     expected_score = Base.sum(
                         aggregate(a, b; verbose = false) 
@@ -128,4 +128,4 @@ function main()
     @assert total_score == expected_score
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

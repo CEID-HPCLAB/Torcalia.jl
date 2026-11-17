@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -16,13 +16,13 @@
 =#
 
 """
-Example: Task Callbacks for Reduction in torcjulia
+Example: Task Callbacks for Reduction in Torcalia
 
-Description: This example demonstrates the usage of callbacks in torcjulia to perform a reduction operation. 
+Description: This example demonstrates the usage of callbacks in Torcalia to perform a reduction operation. 
              Each task computes the square of an integer and invokes a callback function to accumulate the result into a global sum.
 
 Notes: 
-- In torcjulia, callbacks are always executed on the workers of the node that created the task (the homenode). Since all tasks are 
+- In Torcalia, callbacks are always executed on the workers of the node that created the task (the homenode). Since all tasks are 
   created by rank 0, all callbacks run on rank 0, ensuring safe access to the global `sum` variable.
 - If work stealing were enabled (disabled by default), callback tasks could be stolen and executed on remote nodes
   where the global `sum` variable is not shared.
@@ -30,13 +30,13 @@ Notes:
   multiple worker threads execute callbacks concurrently.
 
 Julia < v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3 callback_reduction.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3 callback_reduction.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3,0 callback_reduction.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 callback_reduction.jl
 """
 
-using torcjulia
+using Torcalia
 
 global_sum = 0
 sum_lock = ReentrantLock()  
@@ -60,8 +60,8 @@ function main()
     
     println("Computing sum of squares from 1 to $ntasks using callbacks.")
     
-    tasks = [torcjulia.submit(work, x; callback = cb, async_callback = false) for x in data]
-    torcjulia.wait(tasks)
+    tasks = [Torcalia.submit(work, x; callback = cb, async_callback = false) for x in data]
+    Torcalia.wait(tasks)
 
     println("Sum of squares from 1 to $ntasks: $global_sum.")
     println("Expected: $(sum(x^2 for x in 1:ntasks)).")
@@ -71,4 +71,4 @@ function main()
     println("All tasks completed successfully.")
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

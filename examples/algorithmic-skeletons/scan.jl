@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -18,7 +18,7 @@
 """
 Example: Parallel Scan Algorithmic Skeleton
 
-Description: Demonstrates the usage of the parallel `scan` algorithmic skeleton in torcjulia.
+Description: Demonstrates the usage of the parallel `scan` algorithmic skeleton in Torcalia.
 
 Notes: The parallel `scan` skeleton computes prefix results over an input iterable using a user-defined associative function. 
        It supports both inclusive and exclusive scans. In this example, the function work adds two integers and optionally subtracts 
@@ -37,13 +37,13 @@ Key parameters:
 - `identity`: The identity element for the exclusive scan. The default is 0.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3 scan.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3 scan.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3,0 scan.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 scan.jl
 """
 
-using torcjulia
+using Torcalia
 
 work(x::Int, y::Int; k::Int = 0)::Int = x + y - k
 
@@ -52,13 +52,13 @@ function main()
     
     data = collect(Int64, 1:N)
     
-    results_excl = torcjulia.scan(work, data; chunksize = chunksize, mode = "exclusive")
+    results_excl = Torcalia.scan(work, data; chunksize = chunksize, mode = "exclusive")
     
     @assert results_excl == [0; cumsum(data[1:end-1])]
 
-    results_incl = torcjulia.scan(work, data; chunksize = chunksize, mode = "inclusive")
+    results_incl = Torcalia.scan(work, data; chunksize = chunksize, mode = "inclusive")
 
     @assert results_incl == cumsum(data)
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

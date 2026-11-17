@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -22,7 +22,7 @@ Description: Parallel computation of the Mandelbrot set using Dagger. The genera
              with a maximum of 200,000 iterations per pixel, and each task processes a block of 64×64 pixels, except at the image 
              boundaries, where smaller blocks are formed.
 
-Notes: To ensure a fair comparison between Dagger and torcjulia, all experiments were conducted using identical process counts 
+Notes: To ensure a fair comparison between Dagger and Torcalia, all experiments were conducted using identical process counts 
        (1, 2, 4, 8, etc.) and a fixed configuration of three Julia threads per process for both runtime systems.
 
 Warning: According to [1], the main thread (Thread ID: 1) of the master process (Process ID: 1), which runs Dagger's core scheduler, 
@@ -33,7 +33,7 @@ Warning: According to [1], the main thread (Thread ID: 1) of the master process 
          To investigate this issue, we used Dagger's scope feature to restrict task execution to processes 2 through n (n: total number of processes) 
          and to threads 2 and 3 of the master process, leaving the main thread (Thread ID: 1) of the master process exclusively responsible 
          for running Dagger's core scheduler. This alternative configuration yielded a modest improvement in Dagger's overall 
-         performance, providing a second basis for comparison with torcjulia.
+         performance, providing a second basis for comparison with Torcalia.
 
          We therefore used the latter configuration for all experiments reported in this work. To support reproducibility and enable evaluation 
          of both configurations, we provide the Dagger code for both approaches. A global configuration variable, `USE_MAIN_THREAD`, 

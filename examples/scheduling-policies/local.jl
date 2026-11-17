@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Local Scheduling Policy in torcjulia
+Example: Local Scheduling Policy in Torcalia
 
-Description: This example demonstrates torcjulia's local scheduling policy, where tasks are assigned to the same MPI node that submitted them.
+Description: This example demonstrates Torcalia's local scheduling policy, where tasks are assigned to the same MPI node that submitted them.
 
 Note: The local scheduling policy is set via `set_scheduling_policy(:LOCAL)`. 
 
@@ -27,19 +27,19 @@ Since all tasks are submitted by the master node (rank 0), all tasks are assigne
 If work stealing were enabled (disabled by default), tasks could be stolen and executed on remote nodes, but this is not the case in this example.
 
 Julia < v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3 local.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3 local.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3,0 local.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 local.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int)::Int
     y = x^2
     
     println("Work: Input = $x, Output = $y \
-             on worker thread $(torcjulia.worker_local_id()) of node $(torcjulia.node_id()).")
+             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
 
     y
 end
@@ -49,18 +49,18 @@ function main()
     
     inputs = 1:ntasks
 
-    torcjulia.set_scheduling_policy(:LOCAL)
+    Torcalia.set_scheduling_policy(:LOCAL)
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
-    torcjulia.wait(tasks)
+    tasks = [Torcalia.submit(work, x) for x in inputs]
+    Torcalia.wait(tasks)
 
     for (i, task) in enumerate(tasks)
         x = inputs[i]
         
-        y = torcjulia.result(task)
+        y = Torcalia.result(task)
         
         println("Task $i: $(x)² = $y.")
     end
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

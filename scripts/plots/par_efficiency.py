@@ -45,7 +45,7 @@ FIGURES_PATH.mkdir(parents = True, exist_ok = True)
 
 def find_workload(filename):
     for directory in (RESULTS_PATH, ARIS_PATH):
-        path = directory / "torcjulia" / filename
+        path = directory / "torcalia" / filename
 
         if path.exists():
             return path
@@ -141,11 +141,11 @@ ideal_handle = [Line2D([0], [0], color = '#636363', linestyle = '--', lw = 2)]
 
 ax.legend(handles = ideal_handle, labels = ['Ideal Efficiency'], loc = 'lower left', frameon = True,
           facecolor = '#1a1a1a', edgecolor = 'white', framealpha = 1.0, fontsize = 16.5, 
-          bbox_to_anchor = ((0.005, 0.81) if FONT == "Ubuntu" else (0.003, 0.201)))
+          bbox_to_anchor = ((0.005, 0.194) if FONT == "Ubuntu" else (0.003, 0.201)))
 
 # ax.legend(handles = ideal_handle, labels = ['Ideal Efficiency'], loc = 'lower left', frameon = True,
 #           facecolor = 'white', edgecolor = '#1a1a1a', framealpha = 1.0, fontsize = 16.5, 
-#           bbox_to_anchor = ((0.005, 0.81) if FONT == "Ubuntu" else (0.003, 0.201)))
+#           bbox_to_anchor = ((0.005, 0.194) if FONT == "Ubuntu" else (0.003, 0.201)))
 
 plt.tight_layout()
 

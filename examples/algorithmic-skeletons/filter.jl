@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -18,7 +18,7 @@
 """
 Example: Parallel Filter Algorithmic Skeleton
 
-Description: Demonstrates the usage of the parallel `filter` algorithmic skeleton in torcjulia.
+Description: Demonstrates the usage of the parallel `filter` algorithmic skeleton in Torcalia.
 
 Notes: The parallel `filter` skeleton applies a user-defined function to each element of the input iterable 
        and returns only those elements for which the function returns true. In this example, we define a 
@@ -33,13 +33,13 @@ Key parameters:
                the AMT runtime system will automatically determine the optimal chunk size based on the number of available workers.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3 filter.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3 filter.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 3,0 filter.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 filter.jl
 """
 
-using torcjulia
+using Torcalia
 
 work(x::Int)::Bool = x % 2 == 0
 
@@ -51,9 +51,9 @@ function main()
     println("Each task filters $chunksize elements.")
     println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
     
-    results = torcjulia.filter(work, data; chunksize = chunksize)
+    results = Torcalia.filter(work, data; chunksize = chunksize)
 
     @assert results == [x for x in data if x % 2 == 0]
 end
 
-torcjulia.init(main)
+Torcalia.init(main)
