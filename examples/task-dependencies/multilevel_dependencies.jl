@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -16,9 +16,9 @@
 =#
 
 """
-Example: Multi-Level Task Dependencies in torcjulia
+Example: Multi-Level Task Dependencies in Torcalia
 
-Description: This example demonstrates how multi-level task dependencies can be expressed in torcjulia.
+Description: This example demonstrates how multi-level task dependencies can be expressed in Torcalia.
 
 Notes: In this example, Task C depends on Task A, Task D depends on Task C, and Task E depends on Task B. Finally, Task F depends on both Tasks D and E.
        The runtime system automatically enforces these dependencies and schedules tasks for execution once their dependencies have been satisfied. 
@@ -40,13 +40,13 @@ Workflow:
     5. Task F waits for both Task D and Task E to complete.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2 multilevel_dependencies.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2 multilevel_dependencies.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2,0 multilevel_dependencies.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 multilevel_dependencies.jl
 """
 
-using torcjulia
+using Torcalia
 
 using Crayons
 
@@ -74,8 +74,8 @@ function workB(x::Int)::Int
     result
 end
 
-function workC(x::torcjulia.Future)::Int
-    x = torcjulia.result(x)
+function workC(x::Torcalia.Future)::Int
+    x = Torcalia.result(x)
     
     println(Crayon(foreground = :cyan)("Task C started → Input: Task A = $x."))
 
@@ -88,8 +88,8 @@ function workC(x::torcjulia.Future)::Int
     result
 end
 
-function workD(; x::torcjulia.Future)::Int
-    x = torcjulia.result(x)
+function workD(; x::Torcalia.Future)::Int
+    x = Torcalia.result(x)
     
     println(Crayon(foreground = :green)("Task D started → Input: Task C = $x."))
     
@@ -102,8 +102,8 @@ function workD(; x::torcjulia.Future)::Int
     result
 end
 
-function workE(; x::torcjulia.Future)::Int
-    x = torcjulia.result(x)
+function workE(; x::Torcalia.Future)::Int
+    x = Torcalia.result(x)
     
     println(Crayon(foreground = :cyan)("Task E started → Input: Task B = $x."))
     
@@ -116,10 +116,10 @@ function workE(; x::torcjulia.Future)::Int
     result
 end
 
-function workF(; futures::Tuple{torcjulia.Future, torcjulia.Future})::Int
-    x = torcjulia.result(futures[1])
+function workF(; futures::Tuple{Torcalia.Future, Torcalia.Future})::Int
+    x = Torcalia.result(futures[1])
     
-    y = torcjulia.result(futures[2])
+    y = Torcalia.result(futures[2])
     
     println(Crayon(foreground = :red)("Task F started → Inputs: Task D = $x, Task E = $y."))
     
@@ -136,21 +136,21 @@ function main()
     x = 4; y = 7
 
     # Comment the following line to disable work stealing 
-    torcjulia.enable_stealing()
+    Torcalia.enable_stealing()
 
-    taskA = torcjulia.submit(workA, x) # 2 * 4 = 8     
-    taskB = torcjulia.submit(workB, y) # 7 + 3 = 10        
+    taskA = Torcalia.submit(workA, x) # 2 * 4 = 8     
+    taskB = Torcalia.submit(workB, y) # 7 + 3 = 10        
     
-    taskC = torcjulia.submit(workC, taskA) # 3 * 8 = 24
+    taskC = Torcalia.submit(workC, taskA) # 3 * 8 = 24
     
-    taskD = torcjulia.submit(workD; x = taskC) # 24 - 5 = 19
-    taskE = torcjulia.submit(workE; x = taskB) # 10 * 5 - 10 = 40
+    taskD = Torcalia.submit(workD; x = taskC) # 24 - 5 = 19
+    taskE = Torcalia.submit(workE; x = taskB) # 10 * 5 - 10 = 40
 
-    taskF = torcjulia.submit(workF; futures = (taskD, taskE)) # 19 + 40 = 59
+    taskF = Torcalia.submit(workF; futures = (taskD, taskE)) # 19 + 40 = 59
 
-    torcjulia.wait(taskF)
+    Torcalia.wait(taskF)
 
-    @assert torcjulia.result(taskF) == 59
+    @assert Torcalia.result(taskF) == 59
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

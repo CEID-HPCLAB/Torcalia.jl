@@ -1,14 +1,14 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
  * Authors: Argiris Sofotasios (CEID-HPCLAB)
  * License: MIT License — see the LICENSE file in the repository root.
@@ -16,9 +16,9 @@
 =#
 
 """
-Example: Dynamically Launching MPI Processes in torcjulia
+Example: Dynamically Launching MPI Processes in Torcalia
 
-Description: This example demonstrates how to dynamically launch additional MPI processes in torcjulia. 
+Description: This example demonstrates how to dynamically launch additional MPI processes in Torcalia. 
              The master process (MPI rank 0) submits 20 tasks to compute the squares of the integers from 1 to 20 
              and waits for all tasks to complete. It then dynamically adds two MPI processes, resubmits the same 
              set of tasks, and waits for their completion.
@@ -30,13 +30,13 @@ Warning: Removing an MPI node automatically updates the ranks of the remaining p
          the remaining processes are assigned ranks 0, 1, and 2 (the process previously assigned rank 3 is reassigned rank 2).
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2 launch.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2 launch.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2,0 launch.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 launch.jl
 """
 
-using torcjulia
+using Torcalia
 
 function work(x::Int)::Int
     sleep(1.5)
@@ -44,7 +44,7 @@ function work(x::Int)::Int
     y = x^2
 
     println("Work: input = $x, output = $y \
-             on worker thread $(torcjulia.worker_local_id()) of node $(torcjulia.node_id()).")
+             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
     y
 end
 
@@ -55,45 +55,45 @@ function main()
 
     t0 = time_ns() * 1e-9
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
     elapsed = time_ns() * 1e-9 - t0
 
    for (i, task) in enumerate(tasks)
-        y = torcjulia.result(task)
+        y = Torcalia.result(task)
         println("Task $i: $(inputs[i])² = $y.")
     end
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    println("Total elapsed time: $(round(elapsed, digits = 3)) seconds with $(torcjulia.num_nodes()) MPI processes \
-                and $(torcjulia.num_local_workers()) Julia worker threads per process.")
+    println("Total elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torcalia.num_nodes()) MPI processes \
+                and $(Torcalia.num_local_workers()) Julia worker threads per process.")
 
     num_new_procs = 2
 
-    torcjulia.add_worker(; num_procs = num_new_procs)
+    Torcalia.add_worker(; num_procs = num_new_procs)
 
-    println("Added $num_new_procs new MPI processes. Total MPI processes: $(torcjulia.num_nodes()).")
+    println("Added $num_new_procs new MPI processes. Total MPI processes: $(Torcalia.num_nodes()).")
     
     t0 = time_ns() * 1e-9
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
     elapsed = time_ns() * 1e-9 - t0
 
     for (i, task) in enumerate(tasks)
-        y = torcjulia.result(task)
+        y = Torcalia.result(task)
         println("Task $i: $(inputs[i])² = $y.")
     end
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    println("Total elapsed time: $(round(elapsed, digits = 3)) seconds with $(torcjulia.num_nodes()) MPI processes \
-             and $(torcjulia.num_local_workers()) Julia worker threads per process.")
+    println("Total elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torcalia.num_nodes()) MPI processes \
+             and $(Torcalia.num_local_workers()) Julia worker threads per process.")
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

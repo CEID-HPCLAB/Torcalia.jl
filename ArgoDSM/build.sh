@@ -4,9 +4,9 @@ set -e
 SRC="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ARGODSM_DIR="$SRC/argodsm"
 BUILD_DIR="$ARGODSM_DIR/build"
-ARTIFACT_DIR="$SRC/../torcjulia/src/argodsm/lib"
+ARTIFACT_DIR="$SRC/../Torcalia/src/argodsm/lib"
 
-export JULIA_PROJECT="${JULIA_PROJECT:-$(cd "$SRC/../torcjulia" && pwd)}"
+export JULIA_PROJECT="${JULIA_PROJECT:-$(cd "$SRC/../Torcalia" && pwd)}"
 
 mkdir -p "$ARGODSM_DIR" "$BUILD_DIR" "$ARTIFACT_DIR"
 cd "$ARGODSM_DIR"
@@ -51,4 +51,4 @@ make -j$(nproc)
 
 cp "$BUILD_DIR"/lib/*.so "$ARTIFACT_DIR/" 2>/dev/null || true
 
-echo "ArgoDSM built .so lib files are in $ARTIFACT_DIR."
+echo "Successfully built ArgoDSM shared libraries (.so) in: $ARTIFACT_DIR"

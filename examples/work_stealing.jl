@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Work Stealing in torcjulia
+Example: Work Stealing in Torcalia
 
-Description: This example demonstrates torcjulia's work stealing mechanism with imbalanced workloads 
+Description: This example demonstrates Torcalia's work stealing mechanism with imbalanced workloads 
              (workloads with irregular parallelism) across MPI nodes.
 
 Notes:
@@ -35,84 +35,84 @@ Case 2 - Work Stealing Disabled:
 Requirements: 2+ MPI processes, 1 worker thread per process.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2 work_stealing.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2 work_stealing.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2,0 work_stealing.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 work_stealing.jl
 """
 
-using torcjulia
-
-nodes = torcjulia.num_nodes()
-
-if nodes < 2
-    println("[MPI Rank: $(torcjulia.node_id())] this example needs at least two MPI processes. exiting...")
-    exit()
-end
-
-local_workers = torcjulia.num_local_workers()
-
-if local_workers > 1
-    println("[MPI Rank: $(torcjulia.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
-    exit()
-end
+using Torcalia
 
 function work(x::Int)::Int
-    torcjulia.node_id() % 2 == 0 ? sleep(0.2) : nothing
+    Torcalia.node_id() % 2 == 0 ? sleep(0.2) : nothing
     
     y = x^4
     
-    println("Node $(torcjulia.node_id()) (worker thread $(torcjulia.worker_local_id())): work (input = $x, output = $y).")
+    println("Node $(Torcalia.node_id()) (worker thread $(Torcalia.worker_local_id())): work (input = $x, output = $y).")
     
     y
 end
 
 function main()
+    nodes = Torcalia.num_nodes()
+
+    if nodes < 2
+        println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+        exit()
+    end
+
+    local_workers = Torcalia.num_local_workers()
+
+    if local_workers > 1
+        println("[MPI Rank: $(Torcalia.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
+        exit()
+    end
+    
     ntasks = 40
     
-    torcjulia.enable_stealing()
+    Torcalia.enable_stealing()
 
     println("Case 1: Submitting $ntasks tasks with work stealing enabled.")
 
-    t0 = torcjulia.gettime()
+    t0 = Torcalia.gettime()
     
-    tasks = torcjulia.Future[]
+    tasks = Torcalia.Future[]
     
     for i in 1:ntasks
-        push!(tasks, torcjulia.submit(work, i))
+        push!(tasks, Torcalia.submit(work, i))
     end
 
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
     
-    elapsed = torcjulia.gettime() - t0
+    elapsed = Torcalia.gettime() - t0
 
     for (i, task) in enumerate(tasks)
-        println("Task $i: $(torcjulia.input(task)...)^4 = $(torcjulia.result(task)).")
+        println("Task $i: $(Torcalia.input(task)...)^4 = $(Torcalia.result(task)).")
     end
 
     println("Total elapsed time (Case 1): $(round(elapsed, digits = 3)) seconds.")
 
-    torcjulia.disable_stealing()
+    Torcalia.disable_stealing()
 
     println("\nCase 2: Submitting $ntasks tasks with work stealing disabled.")
 
-    t0 = torcjulia.gettime()
+    t0 = Torcalia.gettime()
     
-    tasks = torcjulia.Future[]
+    tasks = Torcalia.Future[]
     
     for i in 1:ntasks
-        push!(tasks, torcjulia.submit(work, i))
+        push!(tasks, Torcalia.submit(work, i))
     end
 
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
     
-    elapsed = torcjulia.gettime() - t0
+    elapsed = Torcalia.gettime() - t0
 
     for (i, task) in enumerate(tasks)
-        println("Task $i: $(torcjulia.input(task)...)^4 = $(torcjulia.result(task)).")
+        println("Task $i: $(Torcalia.input(task)...)^4 = $(Torcalia.result(task)).")
     end
 
     println("Total elapsed time (Case 2): $(round(elapsed, digits = 3)) seconds.")
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

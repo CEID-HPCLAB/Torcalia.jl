@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Parallel Flux Measurement of Radio Sources using torcjulia
+Example: Parallel Flux Measurement of Radio Sources using Torcalia
 
-Description: This example demonstrates parallel radio-source detection and flux measurement in FITS images using torcjulia.
+Description: This example demonstrates parallel radio-source detection and flux measurement in FITS images using Torcalia.
              
              FITS images are extracted from a tar archive and processed to identify radio sources. The processing
              pipeline applies kappa-sigma clipping, performs threshold-based source detection using connected-component labeling,
@@ -31,7 +31,7 @@ Notes:
     - Images: The FITS images contain radio-source intensity measurements in Jy/beam, obtained with the LOFAR telescope for the 
               P9Hetdex01 field, at a reference frequency of approximately 146.255 MHz.
 
-    - MPI Shared-Memory Windows: Images and corresponding labels are stored in MPI shared-memory windows allocated with `torcjulia.shw_alloc`,
+    - MPI Shared-Memory Windows: Images and corresponding labels are stored in MPI shared-memory windows allocated with `Torcalia.shw_alloc`,
                                  allowing MPI ranks within the same memory island to directly access the corresponding data.
     
     - Nested Parallelism: Image processing tasks spawn additional tasks to process image chunks concurrently. Partial flux sums 
@@ -44,13 +44,13 @@ Warning: This example requires a tar archive (`images.tar`, ~20 GiB) containing 
 Requirements: 8 MPI processes, 1 worker thread per process (shared-memory computing platform).
 
 Julia < v1.12:
-Run: mpiexecjl -n 8 julia --project=/path/to/torcjulia/project --threads 2 pipeline.jl
+Run: mpiexecjl -n 8 julia --project=/path/to/julia/environment --threads 2 pipeline.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 8 julia --project=/path/to/torcjulia/project --threads 2,0 pipeline.jl
+Run: mpiexecjl -n 8 julia --project=/path/to/julia/environment --threads 2,0 pipeline.jl
 """
 
-using torcjulia
+using Torcalia
 
 using AstroImages
 using ImageMorphology
@@ -208,18 +208,18 @@ function process_image(index::Int, image_name::String, tar_file::String, shw_ima
 
     chunk_size = cld(size(image_data)[end], 2)
 
-    node = torcjulia.node_id()
+    node = Torcalia.node_id()
 
     # Second level of parallelism -> process the image in chunks to compute the flux and weighted coordinates for each source label
-    tasks = torcjulia.wait([torcjulia.submit(compute_flux_chunk, shw_images, shw_labels, index, start_idx, 
-                              min(start_idx + chunk_size - 1, size(image_data)[end]), num_labels; node = mod(node + size(image_data)[end], torcjulia.num_nodes()))
+    tasks = Torcalia.wait([Torcalia.submit(compute_flux_chunk, shw_images, shw_labels, index, start_idx, 
+                              min(start_idx + chunk_size - 1, size(image_data)[end]), num_labels; node = mod(node + size(image_data)[end], Torcalia.num_nodes()))
                               for start_idx in 1:chunk_size:size(image_data)[end]]; return_completed = true)
 
     pixels_sum = zeros(Float64, num_labels)
     weighted_coords = zeros(Float64, num_dims, num_labels)
 
     for task in tasks
-        chunk_sum, chunk_weighted_coords = torcjulia.result(task)
+        chunk_sum, chunk_weighted_coords = Torcalia.result(task)
         
         # Reduce the partial results to obtain the final measurements for each source
         pixels_sum .+= chunk_sum
@@ -244,25 +244,25 @@ function main()
     shw_dims = (spatial_dims[1], spatial_dims[2], length(IMAGE_FILES))
     
     # Allocate MPI shared memory windows for the image data and the corresponding labels
-    shw_images = torcjulia.shw_alloc(shw_dims, Float32)
-    shw_labels = torcjulia.shw_alloc(shw_dims, Int64)
+    shw_images = Torcalia.shw_alloc(shw_dims, Float32)
+    shw_labels = Torcalia.shw_alloc(shw_dims, Int64)
 
     data = [(index, file) for (index, file) in enumerate(IMAGE_FILES)]
 
-    num_nodes = torcjulia.num_nodes()
+    num_nodes = Torcalia.num_nodes()
 
-    t0 = torcjulia.gettime()
-    results = torcjulia.wait([torcjulia.submit(process_image, image[1], image[2], IMAGE_TAR_FILE, shw_images, 
+    t0 = Torcalia.gettime()
+    results = Torcalia.wait([Torcalia.submit(process_image, image[1], image[2], IMAGE_TAR_FILE, shw_images, 
                               shw_labels; node = mod(i - 1, num_nodes)) for (i, image) in enumerate(data)]; return_completed = true)
     
-    println("Total Processing Time: $(round(torcjulia.gettime() - t0, digits = 3)) seconds")
+    println("Total Processing Time: $(round(Torcalia.gettime() - t0, digits = 3)) seconds")
 
     for res in results
-        image_name, num_sources, pixels_sum, coms = torcjulia.result(res)
+        image_name, num_sources, pixels_sum, coms = Torcalia.result(res)
         brightest = length(pixels_sum) > 0 ? maximum(pixels_sum) : 0.0
         
         println("Image: $image_name, Number of Sources: $num_sources, Brightest Source Flux: $(round(brightest, digits = 3)).")
     end
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

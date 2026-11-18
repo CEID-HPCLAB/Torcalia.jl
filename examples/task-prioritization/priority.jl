@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Task Prioritization in torcjulia
+Example: Task Prioritization in Torcalia
 
-Description: This example demonstrates torcjulia's priority-based task scheduling. Tasks are scheduled according to their priority level, 
+Description: This example demonstrates Torcalia's priority-based task scheduling. Tasks are scheduled according to their priority level, 
              with higher-priority tasks executing before lower-priority ones when workers become available.
 
 Priority levels:
@@ -32,13 +32,13 @@ Workflow:
 - 8 high-priority tasks are submitted last.
 
 Julia < v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2 priority.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2 priority.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 2 julia --project=/path/to/torcjulia/project --threads 2,0 priority.jl
+Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 priority.jl
 """
 
-using torcjulia
+using Torcalia
 
 using Crayons
 
@@ -48,7 +48,7 @@ const PRIORITY_COLOR = Dict(
     :high   => :red
 )
 
-function work(i::Int, p::torcjulia.TaskPriorityLevel)
+function work(i::Int, p::Torcalia.TaskPriorityLevel)
     sleep(0.5)
     
     cr = Crayon(foreground = PRIORITY_COLOR[p.level])
@@ -59,20 +59,20 @@ function main()
     println(Crayon(foreground = :magenta)("Submitting 24 tasks: 8 low, 8 medium, 8 high priority."))
     
     priorities = vcat(
-        fill(torcjulia.TaskPriority.low, 8),
-        fill(torcjulia.TaskPriority.medium, 8),
-        fill(torcjulia.TaskPriority.high, 8)
+        fill(Torcalia.TaskPriority.low, 8),
+        fill(Torcalia.TaskPriority.medium, 8),
+        fill(Torcalia.TaskPriority.high, 8)
     )
 
-    tasks = torcjulia.Future[]
+    tasks = Torcalia.Future[]
 
     for (i, p) in enumerate(priorities)
-        push!(tasks, torcjulia.submit(work, i, p; priority = p))
+        push!(tasks, Torcalia.submit(work, i, p; priority = p))
     end
 
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
     
     println(Crayon(foreground = :magenta)("All tasks completed successfully."))
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

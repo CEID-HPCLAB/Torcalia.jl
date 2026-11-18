@@ -1,24 +1,24 @@
 #=
  * ==================================================================================
- * torcjulia — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+ * Torcalia.jl — An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
  * ==================================================================================
- * This file is part of torcjulia, an MPI-based runtime system for asynchronous
+ * This file is part of Torcalia, an MPI-based runtime system for asynchronous
  * many task (AMT) parallelism in Julia across both shared and distributed memory
  * platforms, developed at the High Performance Computing Laboratory (HPCLAB)
  * at the Computer Engineering & Informatics Department (CEID),
  * University of Patras, Greece.
  *
- * Repository: https://github.com/CEID-HPCLAB/torcjulia
+ * Repository: https://github.com/CEID-HPCLAB/Torcalia.jl
  *
- * Authors (CEID-HPCLAB): Argiris Sofotasios
- * License:               MIT - See LICENSE file in the project root
+ * Authors: Argiris Sofotasios (CEID-HPCLAB)
+ * License: MIT License — see the LICENSE file in the repository root.
  * ==================================================================================
 =#
 
 """
-Example: Configuring and Using Different Scheduling Policies in torcjulia
+Example: Configuring and Using Different Scheduling Policies in Torcalia
 
-Description: This example demonstrates how to configure and use different scheduling policies in torcjulia, including the default round-robin policy, 
+Description: This example demonstrates how to configure and use different scheduling policies in Torcalia, including the default round-robin policy, 
              weighted round-robin (WRR), local scheduling, random scheduling, and a custom scheduling policy based on task IDs. The custom policy 
              assigns tasks with even IDs to MPI nodes with even ranks and tasks with odd IDs to MPI nodes with odd ranks, randomly selecting a node 
              from the corresponding group. 
@@ -31,25 +31,18 @@ Notes: Regarding the WRR scheduling policy, the weights are specified as a vecto
 Requirements: 2+ MPI processes, 1+ worker threads per MPI process.
 
 Julia < v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3 set_policy.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3 set_policy.jl
 
 Julia >= v1.12:
-Run: mpiexecjl -n 4 julia --project=/path/to/torcjulia/project --threads 3,0 set_policy.jl
+Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 set_policy.jl
 """
 
-using torcjulia
-
-nodes = torcjulia.num_nodes()
-
-if nodes < 2
-    println("[MPI Rank: $(torcjulia.node_id())] this example needs at least two MPI processes. exiting...")
-    exit()
-end
+using Torcalia
 
 function work(x::Int)::Int
-    node_id = torcjulia.node_id()
+    node_id = Torcalia.node_id()
 
-    local_worker_id = torcjulia.worker_local_id()
+    local_worker_id = Torcalia.worker_local_id()
 
     sleep(0.5)
     
@@ -61,64 +54,71 @@ function work(x::Int)::Int
 end
 
 function custom_scheduling_policy(task_id::Int)::Int
-    candidates = iseven(task_id) ? (0:2:nodes-1) : (1:2:nodes-1)
+    candidates = iseven(task_id) ? (0:2:Torcalia.num_nodes()-1) : (1:2:Torcalia.num_nodes()-1)
 
     rand(candidates)
 end
 
 function main()
+    nodes = Torcalia.num_nodes()
+
+    if nodes < 2
+        println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+        exit()
+    end
+
     ntasks = 20
     
     inputs = 1:ntasks
 
-    println("[MPI Rank: $(torcjulia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(torcjulia.get_scheduling_policy()).")
+    println("[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
     weights = [1, 1, 2, 3]
 
-    torcjulia.set_scheduling_policy(:WRR, weights)
+    Torcalia.set_scheduling_policy(:WRR, weights)
 
-    println("\n[MPI Rank: $(torcjulia.node_id())] Submitting $ntasks tasks. Scheduling policy: \
-             $(torcjulia.get_scheduling_policy()) with weights $weights.")
+    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: \
+             $(Torcalia.get_scheduling_policy()) with weights $weights.")
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    torcjulia.set_scheduling_policy(:LOCAL)
+    Torcalia.set_scheduling_policy(:LOCAL)
 
-    println("\n[MPI Rank: $(torcjulia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(torcjulia.get_scheduling_policy()).")
+    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    torcjulia.set_scheduling_policy(:RANDOM)
+    Torcalia.set_scheduling_policy(:RANDOM)
 
-    println("\n[MPI Rank: $(torcjulia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(torcjulia.get_scheduling_policy()).")
+    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
 
-    tasks = [torcjulia.submit(work, x) for x in inputs]
+    tasks = [Torcalia.submit(work, x) for x in inputs]
     
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    println("\n[MPI Rank: $(torcjulia.node_id())] Submitting $ntasks tasks with custom scheduling policy.")
+    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks with custom scheduling policy.")
 
-    tasks = [torcjulia.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
+    tasks = [Torcalia.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
 
-    torcjulia.wait(tasks)
+    Torcalia.wait(tasks)
 
-    @assert all(torcjulia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 end
 
-torcjulia.init(main)
+Torcalia.init(main)

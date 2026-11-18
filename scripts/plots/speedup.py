@@ -45,7 +45,7 @@ FIGURES_PATH.mkdir(parents = True, exist_ok = True)
 
 def find_workload(filename):
     for directory in (RESULTS_PATH, ARIS_PATH):
-        path = directory / "torcjulia" / filename
+        path = directory / "torcalia" / filename
 
         if path.exists():
             return path

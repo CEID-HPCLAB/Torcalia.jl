@@ -51,7 +51,7 @@ ARIS_PATH = RESULTS_PATH / "aris"
 FIGURES_PATH = (Path(__file__).resolve().parent / "../../figures").resolve()
 FIGURES_PATH.mkdir(parents = True, exist_ok = True)
 
-def find_workload(filename, runtime = "torcjulia"):
+def find_workload(filename, runtime = "torcalia"):
     for directory in (RESULTS_PATH, ARIS_PATH):
         path = directory / runtime / filename
 
@@ -60,8 +60,8 @@ def find_workload(filename, runtime = "torcjulia"):
 
     raise FileNotFoundError(f"{filename} not found")
 
-WORKLOAD1_TORCJULIA_PATH = find_workload("hooke-jeeves.txt")
-WORKLOAD4_TORCJULIA_PATH = find_workload("mandelbrot-set.txt")
+WORKLOAD1_TORCALIA_PATH = find_workload("hooke-jeeves.txt")
+WORKLOAD4_TORCALIA_PATH = find_workload("mandelbrot-set.txt")
 WORKLOAD1_DAGGER_PATH = find_workload("hooke-jeeves.txt", runtime = "dagger")
 WORKLOAD4_DAGGER_PATH = find_workload("mandelbrot-set.txt", runtime = "dagger")
 
@@ -87,8 +87,8 @@ def load_workload(path):
 
 
 workloads = {
-    "workload1_torcjulia": load_workload(WORKLOAD1_TORCJULIA_PATH),
-    "workload4_torcjulia": load_workload(WORKLOAD4_TORCJULIA_PATH),
+    "workload1_torcalia": load_workload(WORKLOAD1_TORCALIA_PATH),
+    "workload4_torcalia": load_workload(WORKLOAD4_TORCALIA_PATH),
     "workload1_dagger": load_workload(WORKLOAD1_DAGGER_PATH),
     "workload4_dagger": load_workload(WORKLOAD4_DAGGER_PATH)
 }
@@ -103,18 +103,18 @@ for name, (ranks, times) in workloads.items():
     mask = np.isin(ranks, workers)
     workloads[name] = times[mask]
 
-workload1_torcjulia = workloads["workload1_torcjulia"]
-workload4_torcjulia = workloads["workload4_torcjulia"]
+workload1_torcalia = workloads["workload1_torcalia"]
+workload4_torcalia = workloads["workload4_torcalia"]
 workload1_dagger = workloads["workload1_dagger"]
 workload4_dagger = workloads["workload4_dagger"]
 
 workloads = {
     "Workload 1": {
-        "torcjulia": workload1_torcjulia,
+        "Torcalia": workload1_torcalia,
         "Dagger": workload1_dagger
     },
     "Workload 4": {
-        "torcjulia": workload4_torcjulia,
+        "Torcalia": workload4_torcalia,
         "Dagger": workload4_dagger
     }
 }
@@ -163,7 +163,7 @@ for ax, (name, times) in zip(axes, workloads.items()):
 
     offset = (bar_width + bar_gap) / 2
     
-    ax.bar(ranks - offset, times["torcjulia"], color = color, alpha = 0.9, edgecolor = 'black', linewidth = 1, width = bar_width, zorder = 3)
+    ax.bar(ranks - offset, times["Torcalia"], color = color, alpha = 0.9, edgecolor = 'black', linewidth = 1, width = bar_width, zorder = 3)
 
     ax.bar(ranks + offset, times["Dagger"], color = color, alpha = 0.4 if name == "Workload 4" else 0.5, 
            edgecolor = 'black', linewidth = 1, width = bar_width, zorder = 3, hatch = '///')
@@ -177,16 +177,16 @@ for ax, (name, times) in zip(axes, workloads.items()):
 
     offsets = offset_settings.get(name, offset_settings["default"])
 
-    for i, (x, dagger_time, torcjulia_time) in enumerate(zip(ranks, times["Dagger"], times["torcjulia"])):
-        improvement = (dagger_time - torcjulia_time) / dagger_time * 100
+    for i, (x, dagger_time, torcalia_time) in enumerate(zip(ranks, times["Dagger"], times["Torcalia"])):
+        improvement = (dagger_time - torcalia_time) / dagger_time * 100
         
         gap = gaps.get(i, gaps["default"])
         offset = offsets.get(i, offsets["default"])
 
-        ax.text(x + offset, max(dagger_time, torcjulia_time) + gap, rf"$\downarrow\!\!${improvement:.1f}%",
+        ax.text(x + offset, max(dagger_time, torcalia_time) + gap, rf"$\downarrow\!\!${improvement:.1f}%",
                 ha = "center", va = "bottom", fontsize = 15 if FONT == "Ubuntu" else 13.5, fontweight = "bold", color = "#D1D5DB")
 
-        # ax.text(x + offset, max(dagger_time, torcjulia_time) + gap, rf"$\downarrow\!\!${improvement:.1f}%",
+        # ax.text(x + offset, max(dagger_time, torcalia_time) + gap, rf"$\downarrow\!\!${improvement:.1f}%",
         #         ha = "center", va = "bottom", fontsize = 15 if FONT == "Ubuntu" else 13.5, fontweight = "bold", color = "#475569")
     
     ax.set_xlabel("Processes", fontsize = 20, labelpad = 3)
@@ -204,7 +204,7 @@ for ax, (name, times) in zip(axes, workloads.items()):
 
 axes[0].set_ylabel("Wall-Clock Time", labelpad = 7, fontsize = 20)
 
-runtime_handles = [Patch(facecolor = 'gray', edgecolor = 'black', label = 'torcjulia', alpha = 0.7),
+runtime_handles = [Patch(facecolor = 'gray', edgecolor = 'black', label = 'Torcalia', alpha = 0.7),
                    Patch(facecolor='gray', edgecolor ='black', hatch ='///', label ='Dagger')]
 
 workload_handles = [Patch(facecolor = color, edgecolor = 'black', label = name, alpha = 0.9) for name, color in WORKLOAD_COLORS.items()]
