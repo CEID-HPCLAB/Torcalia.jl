@@ -1,4 +1,15 @@
-# 🚀 Torcalia.jl: An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)"
+      srcset="https://ghrb.waren.build/render/banner?header=%21%5Bicon+src%3D%22https%3A%2F%2Fraw.githubusercontent.com%2FCEID-HPCLAB%2FTorcalia.jl%2Fmain%2Fdocs%2FLogo_dark.png%22+w%3D%22130%25%22%5D+Torcalia.jl&bg=161B22-21262D&color=E6EDF3&headerfont=Fraunces">
+    <source media="(prefers-color-scheme: light)"
+      srcset="https://ghrb.waren.build/render/banner?header=%21%5Bicon+src%3D%22https%3A%2F%2Fraw.githubusercontent.com%2FCEID-HPCLAB%2FTorcalia.jl%2Fmain%2Fdocs%2FLogo_light.png%22+w%3D%22130%25%22%5D+Torcalia.jl&bg=FFF9F7-FFF0EA&color=1F2328&headerfont=Fraunces">
+    <img alt="Torcalia.jl" width="100%"
+      src="https://ghrb.waren.build/render/banner?header=%21%5Bicon+src%3D%22https%3A%2F%2Fraw.githubusercontent.com%2FCEID-HPCLAB%2FTorcalia.jl%2Fmain%2Fdocs%2FLogo_light.png%22+w%3D%22130%25%22%5D+Torcalia.jl&bg=FFF9F7-FFF0EA&color=1F2328&headerfont=Fraunces">
+  </picture>
+</p>
+
+# Torcalia.jl: An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
 
 [![Release](https://img.shields.io/github/v/release/CEID-HPCLAB/Torcalia.jl?color=orange)](https://github.com/CEID-HPCLAB/Torcalia.jl/releases/tag/v0.1.0)
 [![License](https://img.shields.io/badge/License-MIT-FFDEAD)](https://opensource.org/licenses/MIT)<br>
