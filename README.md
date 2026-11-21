@@ -17,9 +17,9 @@
 ![HPC](https://img.shields.io/badge/High--Performance%20Computing-HPC-green)
 ![AMT](https://img.shields.io/badge/Parallel%20Programming-AMT-00599C)
 
-**Torcalia.jl** is a platform-agnostic, high-performance package for **asynchronous many-task (AMT) parallelism** in Julia. Built on top of **Message Passing Interface (MPI)** and Julia's native multithreading, it employs a symmetric P2P model to dynamically orchestrate the concurrent execution of tasks across both shared and distributed memory platforms. 
+**Torcalia.jl** is a platform-agnostic, high-performance package for **asynchronous many-task (AMT) parallelism** in Julia. Built on top of **Message Passing Interface (MPI)** and Julia's native multithreading, it employs a decentralized model to dynamically orchestrate the concurrent execution of tasks across both shared and distributed memory platforms. 
 
-By combining intra-node **work sharing** with inter-node **work stealing**, Torcalia provides **adaptive load balancing**, achieving efficient resource utilization across both regular and irregular workloads. Moreover, tasks can be nested arbitrarily, enabling applications to exploit **multiple levels** of parallelism, while the runtime engine can dynamically switch to the native Single Program Multiple Data (SPMD) programming model for direct integration of MPI code. Beyond task-based programming, Torcalia also supports **skeletal programming**, offering high-level abstractions that simplify the implementation of parallel applications at scale.
+By combining intra-node **work sharing** with inter-node **work stealing**, Torcalia provides **adaptive load balancing**, achieving efficient resource utilization across both regular and irregular workloads. Moreover, tasks can be nested arbitrarily, enabling applications to exploit **multiple levels** of parallelism, while the runtime engine can dynamically switch to the native Single Program Multiple Data (SPMD) programming model for direct integration of MPI code. Beyond the task-based paradigm, Torcalia supports **skeletal programming**, offering high-level abstractions that facilitate the implementation of parallel applications at scale.
 
 
 ## Table of Contents
@@ -1092,6 +1092,9 @@ julia> Pkg.instantiate()
 > [!NOTE]
 > The `examples/` environment already declares the local `Torcalia` package via the `[sources]` section of its `Project.toml`. On Julia `version 1.11` or later, running `Pkg.activate("./examples")` followed by `Pkg.instantiate()` from the repository root is therefore sufficient. On earlier versions, `[sources]` is ignored, so also run `Pkg.develop(path = "./Torcalia")` after activating the environment.
 
+> [!NOTE]
+> In the following examples, `Torcalia` is imported as `Torc`, reflecting its origins in the [TORC](https://ieeexplore.ieee.org/document/6169554) runtime system.
+
 > [!WARNING]
 > The `Torcalia` launch commands in the following examples assume Julia `version 1.12` or later. For earlier versions, adjust the command-line option for specifying the number of threads per MPI process (`-t` / `--threads`) accordingly.
 
@@ -1102,29 +1105,29 @@ This example illustrates the *submit-wait* pattern in `Torcalia`. The main threa
 The example also demonstrates the `submit_wait` function, which submits an additional task and synchronously waits for its result.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Int = x^3
 
 function main()
   n = 10; data = 1:n
   
-  tasks = [Torcalia.submit(work, x) for x in data]
+  tasks = [Torc.submit(work, x) for x in data]
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
   for (i, task) in enumerate(tasks)
-      result = Torcalia.result(task)
+      result = Torc.result(task)
       
       println("Task $i: $(data[i])³ = $result")
   end
 
-  result = Torcalia.submit_wait(work, n + 1)
+  result = Torc.submit_wait(work, n + 1)
   
   println("Task $(n + 1): $(n + 1)³ = $result")
 end
 
-Torcalia.init(main)   
+Torc.init(main)   
 ```
 
 > [!NOTE]
@@ -1162,7 +1165,7 @@ The following example demonstrates how to provide both types of arguments when s
 > The `input` and `kw_input` functions return the positional and keyword arguments, respectively, associated with a task descriptor.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function add(a::Int, b::Int; c::Int = 0, d::Int = 0)::Int  
   a + b + c + d
@@ -1171,22 +1174,22 @@ end
 function main()
 n = 4
 
-tasks = Torcalia.Future[]
+tasks = Torc.Future[]
 
 for i in 1:n
   pos_args = (i, 2 * i)
   kw_args = (; c = i + 5, d = i - 3)
           
-  push!(tasks, Torcalia.submit(add, pos_args...; kw_args...))
+  push!(tasks, Torc.submit(add, pos_args...; kw_args...))
 end
 
-Torcalia.wait(tasks)
+Torc.wait(tasks)
 
 for (idx, task) in enumerate(tasks)
-  pos_args = Torcalia.input(task)
-  kw_args = Torcalia.kw_input(task)
+  pos_args = Torc.input(task)
+  kw_args = Torc.kw_input(task)
 
-  result = Torcalia.result(task)
+  result = Torc.result(task)
 
   pos_str = join(pos_args, ", ")
   kw_str = join(["$k = $v" for (k, v) in pairs(kw_args)], ", ")
@@ -1196,7 +1199,7 @@ end
 
 end
 
-Torcalia.init(main) 
+Torc.init(main) 
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -1219,14 +1222,14 @@ As described in the [Software Architecture](#software-architecture) section, tas
 This code example showcases how data dependencies between tasks are expressed in `Torcalia`, enabling *dependency-aware* dynamic task scheduling. Task `C` depends on the results of tasks `A` and `B` and is therefore scheduled only after both complete, whereas task `D` depends only on task `A` and can start as soon as `A` completes. Tasks `A` and `B` can be executed concurrently, as can tasks `C` and `D`, since they are independent of each other.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 square(x::Int)::Int = x^2
 
-double(x::Torcalia.Future)::Int = 2 * Torcalia.result(x)
+double(x::Torc.Future)::Int = 2 * Torc.result(x)
 
-function add(x::Torcalia.Future, y::Torcalia.Future)::Int
-  Torcalia.result(x) + Torcalia.result(y)
+function add(x::Torc.Future, y::Torc.Future)::Int
+  Torc.result(x) + Torc.result(y)
 end
 
 """
@@ -1242,19 +1245,19 @@ A = square(2) = 4            B = square(4) = 16
 """
 
 function main()
-  taskA = Torcalia.submit(square, 2) # 4
-  taskB = Torcalia.submit(square, 4) # 16
+  taskA = Torc.submit(square, 2) # 4
+  taskB = Torc.submit(square, 4) # 16
 
-  taskC = Torcalia.submit(add, taskA, taskB) # 4 + 16 = 20
-  taskD = Torcalia.submit(double, taskA) # 2 * 4 = 8
+  taskC = Torc.submit(add, taskA, taskB) # 4 + 16 = 20
+  taskD = Torc.submit(double, taskA) # 2 * 4 = 8
 
-  Torcalia.wait([taskC, taskD])
+  Torc.wait([taskC, taskD])
 
-  @assert Torcalia.result(taskC) == 20
-  @assert Torcalia.result(taskD) == 8
+  @assert Torc.result(taskC) == 20
+  @assert Torc.result(taskD) == 8
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 #### Nested Dependencies
@@ -1264,7 +1267,7 @@ Torcalia.init(main)
 The following example demonstrates how nested task dependencies can be expressed in `Torcalia`. Task `B` depends on Task `A`, and task `D` depends on both tasks `B` and `C`. Internally, task `D` creates its own sub-DAG of tasks (`E`, `F`) that are executed in parallel (*nested parallelism*).
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function workA(x::Int)::Int
   println("Task A started → Input: $x.")
@@ -1278,8 +1281,8 @@ function workA(x::Int)::Int
   result
 end
 
-function workB(x::Torcalia.Future)::Int
-  x = Torcalia.result(x)
+function workB(x::Torc.Future)::Int
+  x = Torc.result(x)
   
   println("Task B started → Input: Task A = $x.")
 
@@ -1304,18 +1307,18 @@ function workC(x::Int)::Int
   result
 end
 
-function workD(x::Torcalia.Future, y::Torcalia.Future)::Int
-  x = Torcalia.result(x) # 40
-  y = Torcalia.result(y) # 8
+function workD(x::Torc.Future, y::Torc.Future)::Int
+  x = Torc.result(x) # 40
+  y = Torc.result(y) # 8
   
   println("Task D started → Inputs: Task B = $x, Task C = $y.")
 
-  taskE = Torcalia.submit(workE, x) # 40 + 1 = 41     
-  taskF = Torcalia.submit(workF, y) # 8 * 3 = 24 
+  taskE = Torc.submit(workE, x) # 40 + 1 = 41     
+  taskF = Torc.submit(workF, y) # 8 * 3 = 24 
 
-  Torcalia.wait([taskE, taskF])
+  Torc.wait([taskE, taskF])
 
-  result = 4 * Torcalia.result(taskE) + 2 * Torcalia.result(taskF) # 4 * 41 + 2 * 24 = 164 + 48 = 212
+  result = 4 * Torc.result(taskE) + 2 * Torc.result(taskF) # 4 * 41 + 2 * 24 = 164 + 48 = 212
   
   println("Task D completed → Result: $result.")
 
@@ -1358,17 +1361,17 @@ C (1.5s) ───────────┘        │
 function main()
   x = 5; y = 10
 
-  taskA = Torcalia.submit(workA, x) # 2 * 5 = 10
-  taskB = Torcalia.submit(workB, taskA) # 4 * 10 = 40 
-  taskC = Torcalia.submit(workC, y) # 10 - 2 = 8
-  taskD = Torcalia.submit(workD, taskB, taskC) # 212
+  taskA = Torc.submit(workA, x) # 2 * 5 = 10
+  taskB = Torc.submit(workB, taskA) # 4 * 10 = 40 
+  taskC = Torc.submit(workC, y) # 10 - 2 = 8
+  taskD = Torc.submit(workD, taskB, taskC) # 212
 
-  Torcalia.wait(taskD)
+  Torc.wait(taskD)
 
-  @assert Torcalia.result(taskD) == 212
+  @assert Torc.result(taskD) == 212
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -1402,33 +1405,33 @@ Priority-based task scheduling is supported through three priority levels: `high
 The following example submits `12` tasks, all executing the same task function, which takes approximately one second to complete. The tasks are submitted in ascending priority order: four with `low` priority, followed by four with `medium` priority and four with `high` priority.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
-function work(i::Int, p::Torcalia.TaskPriorityLevel)
+function work(i::Int, p::Torc.TaskPriorityLevel)
   sleep(1)
 
-  println("Node $(Torcalia.node_id()): Task $i finished (priority = $(p.level)).")
+  println("Node $(Torc.node_id()): Task $i finished (priority = $(p.level)).")
 end
 
 function main()
   println("Submitting 12 tasks: 4 low, 4 medium, 4 high priority.")
   
   priorities = vcat(
-      fill(Torcalia.TaskPriority.low, 4),
-      fill(Torcalia.TaskPriority.medium, 4),
-      fill(Torcalia.TaskPriority.high, 4)
+      fill(Torc.TaskPriority.low, 4),
+      fill(Torc.TaskPriority.medium, 4),
+      fill(Torc.TaskPriority.high, 4)
   )
 
-  tasks = Torcalia.Future[]
+  tasks = Torc.Future[]
 
   for (i, p) in enumerate(priorities)
-      push!(tasks, Torcalia.submit(work, i, p; priority = p))
+      push!(tasks, Torc.submit(work, i, p; priority = p))
   end
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `1` worker thread per process:
@@ -1486,14 +1489,14 @@ The following example illustrates three scenarios, with all tasks submitted to `
 > This example assumes that each cluster node runs a single MPI process. Therefore, the terms MPI process and node are used interchangeably.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
   sleep(0.2)
   
   y = x * x
   
-  println("Node $(Torcalia.node_id()) (worker thread $(Torcalia.worker_local_id())): work (input = $x, output = $y)")
+  println("Node $(Torc.node_id()) (worker thread $(Torc.worker_local_id())): work (input = $x, output = $y)")
 
   y
 end
@@ -1503,22 +1506,22 @@ function main()
   
   println("\nCase 1: Pinned to node 0, work stealing disabled (default).")
 
-  tasks = [Torcalia.submit(work, i; node = 0) for i in 1:ntasks]
-  Torcalia.wait(tasks)
+  tasks = [Torc.submit(work, i; node = 0) for i in 1:ntasks]
+  Torc.wait(tasks)
 
-  Torcalia.enable_stealing() # Enables the inter-node work stealing mechanism
+  Torc.enable_stealing() # Enables the inter-node work stealing mechanism
   println("\nCase 2: Pinned to node 0, work stealing enabled and forced_node = false (tasks can be stolen).")
 
-  tasks = [Torcalia.submit(work, i; node = 0) for i in 1:ntasks]
-  Torcalia.wait(tasks)
+  tasks = [Torc.submit(work, i; node = 0) for i in 1:ntasks]
+  Torc.wait(tasks)
 
   println("\nCase 3: Pinned to node 0, work stealing enabled and forced_node = true (tasks cannot be stolen).")
 
-  tasks = [Torcalia.submit(work, i; node = 0, forced_node = true) for i in 1:ntasks]
-  Torcalia.wait(tasks)
+  tasks = [Torc.submit(work, i; node = 0, forced_node = true) for i in 1:ntasks]
+  Torc.wait(tasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -1589,12 +1592,12 @@ The following example launches `Torcalia` with `4` MPI processes, each running `
 
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
-  node_id = Torcalia.node_id()
+  node_id = Torc.node_id()
 
-  local_worker_id = Torcalia.worker_local_id()
+  local_worker_id = Torc.worker_local_id()
 
   sleep(0.5)
   
@@ -1662,57 +1665,57 @@ function main()
   
   inputs = 1:ntasks
 
-  println("Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+  println("Submitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
   weights = [1, 6, 2, 1]
 
-  Torcalia.set_scheduling_policy(:WRR, weights)
+  Torc.set_scheduling_policy(:WRR, weights)
 
   println("\nSubmitting $ntasks tasks. Scheduling policy: \
-            $(Torcalia.get_scheduling_policy()) with weights $weights.")
+            $(Torc.get_scheduling_policy()) with weights $weights.")
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-  Torcalia.set_scheduling_policy(:LOCAL)
+  Torc.set_scheduling_policy(:LOCAL)
 
-  println("\nSubmitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+  println("\nSubmitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-  Torcalia.set_scheduling_policy(:RANDOM)
+  Torc.set_scheduling_policy(:RANDOM)
 
-  println("\nSubmitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+  println("\nSubmitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
   println("\nSubmitting $ntasks tasks with custom scheduling policy.")
 
-  tasks = [Torcalia.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
+  tasks = [Torc.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -1851,7 +1854,7 @@ The master process initially submits `16` tasks that compute the squares of the 
 > Each task introduces an artificial delay of `2` seconds to illustrate the impact of adding and removing MPI processes on overall execution time.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
   sleep(2)
@@ -1859,7 +1862,7 @@ function work(x::Int)::Int
   y = x^2
 
   println("Work: input = $x, output = $y \
-            on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
+            on worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()).")
   y
 end
 
@@ -1868,59 +1871,59 @@ function main()
   
   inputs = 1:ntasks
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  elapsed = Torcalia.gettime()- t0
+  elapsed = Torc.gettime()- t0
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torcalia.num_nodes()) MPI processes \
-              and $(Torcalia.num_local_workers()) Julia worker threads per process.")
+  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torc.num_nodes()) MPI processes \
+              and $(Torc.num_local_workers()) Julia worker threads per process.")
   
   num_new_procs = 2
 
-  Torcalia.add_worker(; num_procs = num_new_procs)
+  Torc.add_worker(; num_procs = num_new_procs)
 
-  println("\nAdded $num_new_procs new MPI processes. Total MPI processes: $(Torcalia.num_nodes()).")
+  println("\nAdded $num_new_procs new MPI processes. Total MPI processes: $(Torc.num_nodes()).")
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  elapsed = Torcalia.gettime()- t0
+  elapsed = Torc.gettime()- t0
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torcalia.num_nodes()) MPI processes \
-              and $(Torcalia.num_local_workers()) Julia worker threads per process.")
+  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torc.num_nodes()) MPI processes \
+              and $(Torc.num_local_workers()) Julia worker threads per process.")
   
   remove_node_rank = 3
   
-  Torcalia.remove_worker(; node_id = remove_node_rank)
+  Torc.remove_worker(; node_id = remove_node_rank)
 
-  println("\nRemoved MPI process with rank: $remove_node_rank. Total MPI processes: $(Torcalia.num_nodes()).")
+  println("\nRemoved MPI process with rank: $remove_node_rank. Total MPI processes: $(Torc.num_nodes()).")
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
 
-  tasks = [Torcalia.submit(work, x) for x in inputs]
+  tasks = [Torc.submit(work, x) for x in inputs]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  elapsed = Torcalia.gettime()- t0
+  elapsed = Torc.gettime()- t0
 
-  @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+  @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torcalia.num_nodes()) MPI processes \
-              and $(Torcalia.num_local_workers()) Julia worker threads per process.")
+  println("\nTotal elapsed time: $(round(elapsed, digits = 3)) seconds with $(Torc.num_nodes()) MPI processes \
+              and $(Torc.num_local_workers()) Julia worker threads per process.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2001,25 +2004,25 @@ After a task function completes, `Torcalia` can invoke a task callback either sy
 In the following example, each task computes the square of an integer (`work`) and invokes a callback to display the result, depending on the task's ID. Tasks with even IDs invoke `cb_1`, while tasks with odd IDs invoke `cb_2`.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
   y = x^2
   
-  local_thread_id = Torcalia.worker_local_id()
-  println("Thread $local_thread_id on node $(Torcalia.node_id()): Work input = $x, output = $y")
+  local_thread_id = Torc.worker_local_id()
+  println("Thread $local_thread_id on node $(Torc.node_id()): Work input = $x, output = $y")
   
   y
 end
 
 function cb_1(result::Int)
-  local_thread_id = Torcalia.worker_local_id()
-  println("Thread $local_thread_id on node $(Torcalia.node_id()): Callback 1 -> Result = $result")
+  local_thread_id = Torc.worker_local_id()
+  println("Thread $local_thread_id on node $(Torc.node_id()): Callback 1 -> Result = $result")
 end
 
 function cb_2(result::Int)
-  local_thread_id = Torcalia.worker_local_id()
-  println("Thread $local_thread_id on node $(Torcalia.node_id()): Callback 2 -> Result = $result")
+  local_thread_id = Torc.worker_local_id()
+  println("Thread $local_thread_id on node $(Torc.node_id()): Callback 2 -> Result = $result")
 end
 
 function main()
@@ -2028,21 +2031,21 @@ function main()
   data = 1:ntasks
 
   tasks = [
-      Torcalia.submit(work, x; 
+      Torc.submit(work, x; 
           callback = x % 2 == 0 ? cb_1 : cb_2, 
           async_callback = false
       ) for x in data
   ]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
   for (idx, task) in enumerate(tasks)
-      result = Torcalia.result(task)
-      println("Task $idx: $(Torcalia.input(task)[1])² = $result.")
+      result = Torc.result(task)
+      println("Task $idx: $(Torc.input(task)[1])² = $result.")
   end
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `1` worker thread per process:
@@ -2084,7 +2087,7 @@ Each task computes the square of an integer and invokes a callback function (`cb
 > The global variable `total_sum` should be protected by a `ReentrantLock` to ensure thread-safe updates when multiple worker threads of the master process execute callbacks concurrently.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function cb(result::Int)
   global total_sum
@@ -2106,14 +2109,14 @@ function main()
   
   data = 1:ntasks
   
-  tasks = [Torcalia.submit(work, x; callback = cb, async_callback = false) for x in data]
+  tasks = [Torc.submit(work, x; callback = cb, async_callback = false) for x in data]
   
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
   @assert total_sum == Base.sum(x^2 for x in 1:ntasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 ### Nested Parallelism
@@ -2126,32 +2129,32 @@ Multiple levels of parallelism are exposed by recursively submitting two tasks w
 > Since this example is intended to show `Torcalia's` support for nested parallelism, identical function calls are recomputed rather than memoized. 
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function fibonacci(n::Int)::Int
   n < 2 && return n
   n < 30 && return fibonacci(n - 1) + fibonacci(n - 2)
 
-  taskA = Torcalia.submit(fibonacci, n - 1)
-  taskB = Torcalia.submit(fibonacci, n - 2)
+  taskA = Torc.submit(fibonacci, n - 1)
+  taskB = Torc.submit(fibonacci, n - 2)
 
-  Torcalia.wait([taskA, taskB])
-  Torcalia.result(taskA) + Torcalia.result(taskB)
+  Torc.wait([taskA, taskB])
+  Torc.result(taskA) + Torc.result(taskB)
 end
 
 function main()
   N = 42
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
   
   value = fibonacci(N)
 
-  elapsed = Torcalia.gettime() - t0
+  elapsed = Torc.gettime() - t0
   
   @assert value == 267_914_296
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 ### Work Stealing
@@ -2170,15 +2173,15 @@ The example compares the following two scenarios:
 > To demonstrate the impact of inter-node work stealing, launch `Torcalia` with **at least two** MPI processes and exactly **one** worker thread per process.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
   (x - 1) % 2 == 0 ? sleep(2) : nothing
   
   y = x^4
   
-  println("Node $(Torcalia.node_id()) (worker thread \
-          $(Torcalia.worker_local_id())): work (input = $x, output = $y)")
+  println("Node $(Torc.node_id()) (worker thread \
+          $(Torc.worker_local_id())): work (input = $x, output = $y)")
   
   y
 end
@@ -2186,40 +2189,40 @@ end
 function main()
   ntasks = 16
   
-  Torcalia.enable_stealing()
+  Torc.enable_stealing()
 
   println("Case 1: Submitting $ntasks tasks with work stealing enabled.")
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
   
-  tasks = [Torcalia.submit(work, i) for i in 1:ntasks]
+  tasks = [Torc.submit(work, i) for i in 1:ntasks]
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
   
-  elapsed = Torcalia.gettime() - t0
+  elapsed = Torc.gettime() - t0
 
   println("Total elapsed time (Case 1): $(round(elapsed, digits = 3)) seconds.")
 
-  @assert all(Torcalia.result(task) == (Torcalia.input(task)[1])^4 for task in tasks)
+  @assert all(Torc.result(task) == (Torc.input(task)[1])^4 for task in tasks)
 
-  Torcalia.disable_stealing()
+  Torc.disable_stealing()
 
   println("\nCase 2: Submitting $ntasks tasks with work stealing disabled.")
 
-  t0 = Torcalia.gettime()
+  t0 = Torc.gettime()
   
-  tasks = [Torcalia.submit(work, i) for i in 1:ntasks]
+  tasks = [Torc.submit(work, i) for i in 1:ntasks]
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
   
-  elapsed = Torcalia.gettime() - t0
+  elapsed = Torc.gettime() - t0
 
   println("Total elapsed time (Case 2): $(round(elapsed, digits = 3)) seconds.")
 
-  @assert all(Torcalia.result(task) == (Torcalia.input(task)[1])^4 for task in tasks)
+  @assert all(Torc.result(task) == (Torc.input(task)[1])^4 for task in tasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -2277,35 +2280,35 @@ In addition to task-based execution, `Torcalia` supports `MPI's SPMD` programmin
 This example demonstrates how the `Torcalia.spmd` function enables switching from task-based execution to SPMD execution within `Torcalia`. Each MPI process executes the same `work` function, operating on data determined by its MPI rank. Within `work`, `Torcalia.mapReduce` is used to process the data in parallel, illustrating how SPMD execution and task-based parallelism can be combined within a single application.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function double(x::Int)::Int
   x * 2
 end
 
 function work(; multiplier::Int)::Tuple{Int, Int}
-  node_id = Torcalia.node_id()
-  num_nodes = Torcalia.num_nodes()
+  node_id = Torc.node_id()
+  num_nodes = Torc.num_nodes()
 
   A = fill(node_id, multiplier * num_nodes)
 
-  result = Torcalia.mapReduce(double, +, A)
+  result = Torc.mapReduce(double, +, A)
   
   result, node_id
 end
 
 function main()    
-  tasks = Torcalia.spmd(work; multiplier = 100)
+  tasks = Torc.spmd(work; multiplier = 100)
   
   for (i, task) in enumerate(tasks)
-      result = Torcalia.result(task)
+      result = Torc.result(task)
       
-      @assert result[1] == 2 * result[2] * 100 * Torcalia.num_nodes()
+      @assert result[1] == 2 * result[2] * 100 * Torc.num_nodes()
       println("MPI Process $(result[2]): sum(A) = $(result[1]).")
   end
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `2` worker threads per process:
@@ -2331,7 +2334,7 @@ This example demonstrates how MPI collective operations can be used within `Torc
 The master process (`MPI rank 0`) initializes an array `A`, which is broadcast to all MPI processes using `MPI.Bcast!`. Each process then scales its local copy by its MPI rank, and `MPI.Allreduce` computes the element-wise sum of the resulting arrays across all processes.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 using MPI
 
@@ -2343,7 +2346,7 @@ function bcast_task()
 end
 
 function local_computation()
-  node_id = Torcalia.node_id()
+  node_id = Torc.node_id()
   
   A .*= node_id
   
@@ -2351,7 +2354,7 @@ function local_computation()
 end
 
 function reduce_task()
-  node_id = Torcalia.node_id()
+  node_id = Torc.node_id()
 
   result = MPI.Allreduce(A, +, MPI.COMM_WORLD)
 
@@ -2363,12 +2366,12 @@ function main()
       A[i] = 100 * (i - 1)
   end
 
-  Torcalia.spmd(bcast_task)
-  Torcalia.spmd(local_computation)
-  Torcalia.spmd(reduce_task)
+  Torc.spmd(bcast_task)
+  Torc.spmd(local_computation)
+  Torc.spmd(reduce_task)
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -2400,7 +2403,7 @@ This example demonstrates how MPI operations, including collective communication
 > The example also illustrates how multiple `Torcalia` runtime sessions can be initialized while keeping the MPI environment active by setting `MPI_finalize` to `false`.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 using MPI
 
@@ -2428,7 +2431,7 @@ function mpi_gather_inside()
 end
 
 function torcalia_gather()
-  Torcalia.spmd(mpi_gather_inside)
+  Torc.spmd(mpi_gather_inside)
 end
 
 function mpi_allreduce_outside()
@@ -2452,16 +2455,16 @@ function mpi_allreduce_inside()
 end
 
 function torcalia_allreduce()
-  Torcalia.spmd(mpi_allreduce_inside)
+  Torc.spmd(mpi_allreduce_inside)
 end
 
 mpi_gather_outside()
 
-Torcalia.init(torcalia_gather; MPI_finalize = false)
+Torc.init(torcalia_gather; MPI_finalize = false)
 
 mpi_allreduce_outside()
 
-Torcalia.init(torcalia_allreduce)
+Torc.init(torcalia_allreduce)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -2498,45 +2501,45 @@ Each task is explicitly scheduled to a different MPI node and executes the `work
 
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(A::Vector{Int})
-  rank = Torcalia.node_id() 
+  rank = Torc.node_id() 
 
   A[rank + 1] = rank
   
   println("[MPI Rank: $rank] Worker thread \
-          $(Torcalia.worker_local_id()) set A[$(rank + 1)] = $rank.")
+          $(Torc.worker_local_id()) set A[$(rank + 1)] = $rank.")
 
-  Torcalia.argo_barrier(1)
+  Torc.argo_barrier(1)
 end
 
 function main()
-  N = Torcalia.num_nodes()
-  A = Torcalia.pdsm_alloc(N, Int)
+  N = Torc.num_nodes()
+  A = Torc.pdsm_alloc(N, Int)
 
   for i in 1:N 
       A[i] = 0 
   end
 
-  println("[MPI Rank: $(Torcalia.node_id())] Initial values of A: $A.")
+  println("[MPI Rank: $(Torc.node_id())] Initial values of A: $A.")
 
-  tasks = Vector{Torcalia.Future}(undef, N)
+  tasks = Vector{Torc.Future}(undef, N)
 
   for i in 0:N-1
-      tasks[i+1] = Torcalia.submit(work, A; node = i)
+      tasks[i+1] = Torc.submit(work, A; node = i)
   end
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
   
-  println("[MPI Rank: $(Torcalia.node_id())] Final values of A after all tasks completed: $A.")
+  println("[MPI Rank: $(Torc.node_id())] Final values of A after all tasks completed: $A.")
 
   @assert A == collect(Int, 0:N-1)
 end
 
 # Configure the ArgoDSM memory and cache capacities
-Torcalia.argo_init(1024*1024, 1024*4)
-Torcalia.init(main)
+Torc.argo_init(1024*1024, 1024*4)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -2563,7 +2566,7 @@ This example demonstrates how *MPI shared-memory windows* can be used on top of 
 A shared array `A` is allocated using `Torcalia.shw_alloc`, with one element per MPI process, and initialized by the master process. Each process then doubles the value of its corresponding element. Once all tasks have completed, the master process's main thread prints the updated array.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function work(idx::Int; A::Vector{Int})
   old_value = A[idx]
@@ -2572,36 +2575,36 @@ function work(idx::Int; A::Vector{Int})
 
   new_value = A[idx]
   
-  println("[MPI Rank: $(Torcalia.node_id())] Worker thread \
-           $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()) updated A[$idx] from \
+  println("[MPI Rank: $(Torc.node_id())] Worker thread \
+           $(Torc.worker_local_id()) of node $(Torc.node_id()) updated A[$idx] from \
            $old_value to $new_value.")
 end
 
 function main()
-  N = Torcalia.num_nodes()
+  N = Torc.num_nodes()
   
-  A = Torcalia.shw_alloc((N,), Int)
+  A = Torc.shw_alloc((N,), Int)
 
-  println("[MPI Rank: $(Torcalia.node_id())] Allocated MPI shared-memory array A ($N integer elements).")
+  println("[MPI Rank: $(Torc.node_id())] Allocated MPI shared-memory array A ($N integer elements).")
 
-  if Torcalia.node_id() == 0
+  if Torc.node_id() == 0
       for i in 1:N
           A[i] = 100 * (i - 1)
       end
   end
 
-  println("[MPI Rank: $(Torcalia.node_id())] Initial values of A: $A.")
+  println("[MPI Rank: $(Torc.node_id())] Initial values of A: $A.")
 
-  tasks = [Torcalia.submit(work, i; A = A, node = i-1) for i in 1:Int(N)]
+  tasks = [Torc.submit(work, i; A = A, node = i-1) for i in 1:Int(N)]
 
-  Torcalia.wait(tasks)
+  Torc.wait(tasks)
 
-  println("[MPI Rank: $(Torcalia.node_id())] Final values of A after all tasks completed: $A.")
+  println("[MPI Rank: $(Torc.node_id())] Final values of A after all tasks completed: $A.")
 
   @assert A == [(100 * (i - 1)) * 2 for i in 1:Int(N)]
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `1` worker thread per process:
@@ -2639,7 +2642,7 @@ In this simple example, we define a function, `work`, that computes the square o
 Based on the specified `chunksize`, the runtime automatically divides the input into `5` chunks and assigns each chunk to a separate task. Each task then applies `work` to the `2` elements in its assigned chunk. Once all tasks have completed, `map` returns the resulting `Vector`.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Int = x^2
 
@@ -2651,14 +2654,14 @@ function main()
   println("Each task computes the square of $chunksize elements.")
   println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
   
-  results = Torcalia.map(work, data; chunksize = chunksize)
+  results = Torc.map(work, data; chunksize = chunksize)
 
   @assert results == [x^2 for x in data]
 
   println("Resulting vector: $results.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker thread per process:
@@ -2681,7 +2684,7 @@ In the following example, the primary application task invokes `map_async` twice
 > Both `workA` and `workB` incorporate an artificial delay of `10` milliseconds per invocation to clearly illustrate the difference between synchronous and asynchronous execution using `map` and `map_async`, respectively.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function workA(x::Int)::Int
   sleep(0.01)
@@ -2700,19 +2703,19 @@ function main()
   
   A = 1:N; B = 2*A; C = 3*A
   
-  tasksA = Torcalia.map_async(workA, A; chunksize = chunksize)
-  tasksB = Torcalia.map_async(workB, B; chunksize = chunksize)
+  tasksA = Torc.map_async(workA, A; chunksize = chunksize)
+  tasksB = Torc.map_async(workB, B; chunksize = chunksize)
 
   resultsC = 2 * C
 
   println("Processing of vector C completed.")
 
-  if !(Torcalia.ready(tasksA) && Torcalia.ready(tasksB))
+  if !(Torc.ready(tasksA) && Torc.ready(tasksB))
       println("Waiting for processing of vectors A and B to complete.")
   end
 
-  resultsA = Torcalia.get(tasksA)
-  resultsB = Torcalia.get(tasksB)
+  resultsA = Torc.get(tasksA)
+  resultsB = Torc.get(tasksB)
 
   println("Processing of vectors A and B completed.")
 
@@ -2721,7 +2724,7 @@ function main()
   @assert resultsC == [2 * x for x in C]
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `4` MPI processes and `2` worker threads per process:
@@ -2746,7 +2749,7 @@ Torcalia [tasks]: average pending time = 1.251s, average execution time = 0.575s
 Unlike `map`, which passes each element of the input iterable to the user-defined function as a single argument, `starmap` unpacks each element and passes its individual components as separate arguments.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int, y::Int, a::Int, b::Int)::Int = (x + y + a) * b
 
@@ -2760,12 +2763,12 @@ function main()
   println("Each task computes the work function for $chunksize elements.")
   println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
   
-  results = Torcalia.starmap(work, data; chunksize = chunksize, args = (a, b))
+  results = Torc.starmap(work, data; chunksize = chunksize, args = (a, b))
 
   @assert results == [(x + y + a) * b for (x, y) in data]
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2792,38 +2795,38 @@ The parallel `reduce` skeleton applies a user-defined reduction function to the 
 In this example, we use the `+` operator as the reduction operation to demonstrate `Vector` reduction, row-wise and column-wise `Matrix` reductions in `"1d"` mode, and progressive `Matrix` reduction to a scalar in `"2d"` mode.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function main()
     vec = [1, 2, 3, 4, 5]
     mat = [1 2 3; 4 5 6; 7 8 9]
     
-    result_vec = Torcalia.reduce(+, vec)
+    result_vec = Torc.reduce(+, vec)
 
     @assert result_vec == Base.reduce(+, vec)
 
     println("Result after vector reduction: $(result_vec).")
     
-    result_1d_col = Torcalia.reduce(+, mat; direction = :column)
+    result_1d_col = Torc.reduce(+, mat; direction = :column)
     
     @assert result_1d_col == [Base.reduce(+, mat[:, i]) for i in 1:size(mat, 2)]
 
     println("Result after column-wise matrix reduction: $(result_1d_col).")
     
-    result_1d_row = Torcalia.reduce(+, mat; direction = :row)
+    result_1d_row = Torc.reduce(+, mat; direction = :row)
     
     @assert result_1d_row == [Base.reduce(+, mat[i, :]) for i in 1:size(mat, 1)]
     
     println("Result after row-wise matrix reduction: $(result_1d_row).")
 
-    result_2d = Torcalia.reduce(+, mat; mode = "2d")
+    result_2d = Torc.reduce(+, mat; mode = "2d")
 
     @assert result_2d == Base.reduce(+, [Base.reduce(+, mat[:, i]) for i in 1:size(mat, 2)])
 
     println("Result after 2D matrix reduction: $(result_2d).")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2846,7 +2849,7 @@ The parallel `mapReduce` skeleton combines the functionalities of the `map` and 
 In this example, we define a function, `work`, that computes the square of an integer. The `mapReduce` skeleton applies `work` to each element of the input `Vector` and then uses the `+` operator as the reduction operation to calculate the sum of the resulting squared values.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Int = x^2
 
@@ -2855,14 +2858,14 @@ function main()
     
     data = 1:N # [1, 2, 3, ..., 18, 19, 20]
 
-    result = Torcalia.mapReduce(work, +, data; chunksize = chunksize)
+    result = Torc.mapReduce(work, +, data; chunksize = chunksize)
 
     @assert result == Base.reduce(+, [x^2 for x in data])
 
     println("Sum of squares from 1 to $N: $result.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2882,7 +2885,7 @@ The parallel `mapPairs` skeleton applies a user-defined function to every pair o
 In this example, we define a function, `work`, that computes the product of two integers. The `mapPairs` skeleton applies `work` to every pair formed from the two input vectors, producing a `Matrix` of pairwise products.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int, y::Int)::Int = x * y
 
@@ -2892,14 +2895,14 @@ function main()
     A = 1:N # [1, 2, 3, 4, 5]
     B = N:-1:1 # [5, 4, 3, 2, 1]
 
-    results = Torcalia.mapPairs(work, A, B)
+    results = Torc.mapPairs(work, A, B)
     
     @assert results == [x * y for x in A, y in B]  
 
     println("Cartesian pairwise products of A and B: $results.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2919,7 +2922,7 @@ The parallel `mapPairsReduce` skeleton combines the functionalities of the `mapP
 In this example, we use the same `work` function as in the previous example and apply the `maximum` operation to reduce the resulting values. We demonstrate both `"1d"` and `"2d"` reduction modes, including row-wise and column-wise reduction in `"1d"` mode.
 
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 work(a::Int, b::Int)::Int = a * b
 
@@ -2929,26 +2932,26 @@ function main()
     A = 1:N # [1, 2, 3, 4, 5]
     B = N:-1:1 # [5, 4, 3, 2, 1]
 
-    result_1d_row = Torcalia.mapPairsReduce(work, max, A, B; mode = "1d", direction = :row)
+    result_1d_row = Torc.mapPairsReduce(work, max, A, B; mode = "1d", direction = :row)
     
     @assert result_1d_row == [Base.reduce((x, y) -> max(x, y), [work(x, y) for y in B]) for x in A]
 
     println("Maximum element in each row of the Cartesian pairwise products of A and B: $result_1d_row.")
 
-    result_1d_col = Torcalia.mapPairsReduce(work, max, A, B; mode = "1d", direction = :column)
+    result_1d_col = Torc.mapPairsReduce(work, max, A, B; mode = "1d", direction = :column)
     
     @assert result_1d_col == [Base.reduce((x, y) -> max(x, y), [work(x, y) for x in A]) for y in B]
 
     println("Maximum element in each column of the Cartesian pairwise products of A and B: $result_1d_col.")
 
-    result_2d = Torcalia.mapPairsReduce(work, max, A, B; mode = "2d")
+    result_2d = Torc.mapPairsReduce(work, max, A, B; mode = "2d")
     
     @assert result_2d == Base.reduce((x, y) -> max(x, y), [work(x, y) for x in A, y in B])
 
     println("Maximum value among all Cartesian pairwise products of A and B: $result_2d.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -2970,7 +2973,7 @@ The parallel `filter` skeleton applies a user-defined function to each element o
 In this example, we define a vector of integers, `A`, and a function, `work`, that checks whether a given element is even. The `filter` skeleton returns a new `Vector` containing only the even elements of `A`.
 
 ```julia
-using Torcalia 
+import Torcalia as Torc
 
 work(x::Int)::Bool = x % 2 == 0
 
@@ -2979,14 +2982,14 @@ function main()
     
     A = 1:N # [1, 2, 3, ..., 18, 19, 20]
     
-    results = Torcalia.filter(work, A)
+    results = Torc.filter(work, A)
 
     @assert results == [x for x in A if iseven(x)]
 
     println("Even numbers in A: $results.")
 end
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -3005,22 +3008,21 @@ The parallel `scan` skeleton computes prefix results over an input iterable usin
 
 In this example, we demonstrate both `inclusive` and `exclusive` scans using the addition operator (`+`) to compute the prefix sums of the elements in an input iterable, `data`. For the exclusive scan, we specify `0` as the identity element through the `identity` argument in the `scan` call.
 
-
 ```julia
-using Torcalia
+import Torcalia as Torc
 
 function main()
     N = 20
 
     data = 1:N
 
-    results_inclusive = Torcalia.scan(+, data; mode = "inclusive")
+    results_inclusive = Torc.scan(+, data; mode = "inclusive")
 
     @assert results_inclusive == cumsum(data)
 
     println("Results of inclusive scan: $results_inclusive.")
 
-    results_exclusive = Torcalia.scan(+, data; mode = "exclusive", identity = 0)
+    results_exclusive = Torc.scan(+, data; mode = "exclusive", identity = 0)
 
     @assert results_exclusive == [0; cumsum(data[1:end-1])]
 
@@ -3028,7 +3030,7 @@ function main()
 end
 
 
-Torcalia.init(main)
+Torc.init(main)
 ```
 
 Example output when launching the `Torcalia` runtime with `2` MPI processes and `2` worker threads per process:
@@ -3321,7 +3323,7 @@ Torcalia.jl/
 ## Planned Features
 
 - [X] Improve the API documentation
-- [ ] Integrate support for GPUs (both `NVIDIA` and `AMD`) and other accelerators
+- [ ] Integrate support for GPUs (both `NVIDIA` and `AMD`) and other accelerators (**in progress**)
 - [ ] Implement automatic elastic resource management, dynamically scaling computational resources at runtime without user intervention
 - [ ] Implement fault-tolerance mechanisms
 - [ ] Improve the work-stealing mechanism to optimize task redistribution across MPI nodes

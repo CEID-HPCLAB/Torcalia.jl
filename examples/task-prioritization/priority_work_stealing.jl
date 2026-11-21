@@ -42,13 +42,13 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 priority_work_stealing.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Crayons, Random
 
-function priority_task_func(i::Int, p::Torcalia.TaskPriorityLevel)
-    color = p == Torcalia.TaskPriority.high ? :green :
-            p == Torcalia.TaskPriority.medium ? :yellow : :cyan
+function priority_task_func(i::Int, p::Torc.TaskPriorityLevel)
+    color = p == Torc.TaskPriority.high ? :green :
+            p == Torc.TaskPriority.medium ? :yellow : :cyan
     
     println(Crayon(foreground = color)("Priority task $i [$(p.level)] started."))
     
@@ -70,27 +70,27 @@ function main()
     
     num_generic_tasks = 15; num_priority_tasks = 25
 
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
-    priorities = [Torcalia.TaskPriority.low, Torcalia.TaskPriority.medium, Torcalia.TaskPriority.high]
+    priorities = [Torc.TaskPriority.low, Torc.TaskPriority.medium, Torc.TaskPriority.high]
 
-    tasks = Torcalia.Future[]
+    tasks = Torc.Future[]
 
     println(Crayon(foreground = :magenta)("Submitting $num_generic_tasks general-purpose tasks (default low priority)."))
     
     for i in 1:num_generic_tasks
-        push!(tasks, Torcalia.submit(generic_task_func, i))
+        push!(tasks, Torc.submit(generic_task_func, i))
     end
 
     println(Crayon(foreground = :magenta)("Submitting $num_priority_tasks priority tasks with random priorities."))
    
     for (i, p) in enumerate(rand(priorities, num_priority_tasks))
-        push!(tasks, Torcalia.submit(priority_task_func, i, p; priority = p))
+        push!(tasks, Torc.submit(priority_task_func, i, p; priority = p))
     end
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
     
     println(Crayon(foreground = :magenta)("All tasks completed successfully."))
 end
 
-Torcalia.init(main)
+Torc.init(main)

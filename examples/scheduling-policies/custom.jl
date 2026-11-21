@@ -51,13 +51,13 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 custom.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
     y = x^2
     
     println("Work: Input = $x, Output = $y \
-             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
+             on worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()).")
 
     y
 end
@@ -75,17 +75,17 @@ function main()
     
     inputs = 1:ntasks
     
-    tasks = [Torcalia.submit(work, x; distribution_policy = (custom_scheduler, x)) for x in inputs]
+    tasks = [Torc.submit(work, x; distribution_policy = (custom_scheduler, x)) for x in inputs]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
     for (i, task) in enumerate(tasks)
         x = inputs[i]
         
-        y = Torcalia.result(task)
+        y = Torc.result(task)
         
         println("Task $i: $(x)² = $y.")
     end
 end
 
-Torcalia.init(main)
+Torc.init(main)

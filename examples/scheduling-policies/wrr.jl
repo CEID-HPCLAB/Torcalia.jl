@@ -53,13 +53,13 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 weighted-round-robin.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
     y = x^2
     
     println("Work: Input = $x, Output = $y \
-             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
+             on worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()).")
 
     y
 end
@@ -71,18 +71,18 @@ function main()
     
     weights = [1, 1, 2, 3]
 
-    Torcalia.set_scheduling_policy(:WRR,  weights)
+    Torc.set_scheduling_policy(:WRR,  weights)
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, x) for x in inputs]
+    Torc.wait(tasks)
 
     for (i, task) in enumerate(tasks)
         x = inputs[i]
         
-        y = Torcalia.result(task)
+        y = Torc.result(task)
         
         println("Task $i: $(x)² = $y.")
     end
 end
 
-Torcalia.init(main)
+Torc.init(main)

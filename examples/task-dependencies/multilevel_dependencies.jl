@@ -46,7 +46,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 multilevel_dependencies.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Crayons
 
@@ -74,8 +74,8 @@ function workB(x::Int)::Int
     result
 end
 
-function workC(x::Torcalia.Future)::Int
-    x = Torcalia.result(x)
+function workC(x::Torc.Future)::Int
+    x = Torc.result(x)
     
     println(Crayon(foreground = :cyan)("Task C started → Input: Task A = $x."))
 
@@ -88,8 +88,8 @@ function workC(x::Torcalia.Future)::Int
     result
 end
 
-function workD(; x::Torcalia.Future)::Int
-    x = Torcalia.result(x)
+function workD(; x::Torc.Future)::Int
+    x = Torc.result(x)
     
     println(Crayon(foreground = :green)("Task D started → Input: Task C = $x."))
     
@@ -102,8 +102,8 @@ function workD(; x::Torcalia.Future)::Int
     result
 end
 
-function workE(; x::Torcalia.Future)::Int
-    x = Torcalia.result(x)
+function workE(; x::Torc.Future)::Int
+    x = Torc.result(x)
     
     println(Crayon(foreground = :cyan)("Task E started → Input: Task B = $x."))
     
@@ -116,10 +116,10 @@ function workE(; x::Torcalia.Future)::Int
     result
 end
 
-function workF(; futures::Tuple{Torcalia.Future, Torcalia.Future})::Int
-    x = Torcalia.result(futures[1])
+function workF(; futures::Tuple{Torc.Future, Torc.Future})::Int
+    x = Torc.result(futures[1])
     
-    y = Torcalia.result(futures[2])
+    y = Torc.result(futures[2])
     
     println(Crayon(foreground = :red)("Task F started → Inputs: Task D = $x, Task E = $y."))
     
@@ -136,21 +136,21 @@ function main()
     x = 4; y = 7
 
     # Comment the following line to disable work stealing 
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
-    taskA = Torcalia.submit(workA, x) # 2 * 4 = 8     
-    taskB = Torcalia.submit(workB, y) # 7 + 3 = 10        
+    taskA = Torc.submit(workA, x) # 2 * 4 = 8     
+    taskB = Torc.submit(workB, y) # 7 + 3 = 10        
     
-    taskC = Torcalia.submit(workC, taskA) # 3 * 8 = 24
+    taskC = Torc.submit(workC, taskA) # 3 * 8 = 24
     
-    taskD = Torcalia.submit(workD; x = taskC) # 24 - 5 = 19
-    taskE = Torcalia.submit(workE; x = taskB) # 10 * 5 - 10 = 40
+    taskD = Torc.submit(workD; x = taskC) # 24 - 5 = 19
+    taskE = Torc.submit(workE; x = taskB) # 10 * 5 - 10 = 40
 
-    taskF = Torcalia.submit(workF; futures = (taskD, taskE)) # 19 + 40 = 59
+    taskF = Torc.submit(workF; futures = (taskD, taskE)) # 19 + 40 = 59
 
-    Torcalia.wait(taskF)
+    Torc.wait(taskF)
 
-    @assert Torcalia.result(taskF) == 59
+    @assert Torc.result(taskF) == 59
 end
 
-Torcalia.init(main)
+Torc.init(main)

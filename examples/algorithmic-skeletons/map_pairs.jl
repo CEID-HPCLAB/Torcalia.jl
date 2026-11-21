@@ -38,7 +38,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 map_pairs.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int, y::Int)::Int = x * y
 
@@ -50,9 +50,9 @@ function main()
     println("Each task executes the work function for $chunksize pairs.")
     println("Expected number of tasks = $(ceil(Int, (length(a) * length(b)) / chunksize)).")
 
-    results = Torcalia.mapPairs(work, a, b; chunksize = chunksize)
+    results = Torc.mapPairs(work, a, b; chunksize = chunksize)
     
     @assert results == [work(x, y) for x in a, y in b]  
 end
 
-Torcalia.init(main)
+Torc.init(main)

@@ -59,7 +59,7 @@ Julia >= v1.12
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 starmap_async.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int, y::Int; scale::Float64 = 1.0, verbose::Bool = true)::Float64
     sleep(rand(0.1:0.2:1.3))  
@@ -92,30 +92,30 @@ function main()
     # Set verbose to false to reduce output clutter
     verbose = true
     
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
     println("[Work Stealing] -> Enabled.")
 
-    fut1 = Torcalia.starmap_async(work, data1; verbose = verbose,
+    fut1 = Torc.starmap_async(work, data1; verbose = verbose,
         callback = r -> println("[callback] -> Data batch 1 complete - Result: $r."))
 
-    fut2 = Torcalia.starmap_async(work, data2; scale = 2.0, verbose = verbose,
+    fut2 = Torc.starmap_async(work, data2; scale = 2.0, verbose = verbose,
         callback = r -> println("[Callback] -> Data batch 2 complete - Result: $r."))
 
-    !Torcalia.ready(fut1) ? println("Waiting for data batch 1...") : nothing
+    !Torc.ready(fut1) ? println("Waiting for data batch 1...") : nothing
     
-    results1 = Torcalia.get(fut1)
+    results1 = Torc.get(fut1)
 
-    !Torcalia.ready(fut2) ? println("Waiting for data batch 2...") : nothing
+    !Torc.ready(fut2) ? println("Waiting for data batch 2...") : nothing
     
-    results2 = Torcalia.get(fut2)
+    results2 = Torc.get(fut2)
 
     pairs = collect(zip(results1, results2))
     
-    fut3 = Torcalia.starmap_async(aggregate, pairs; verbose = verbose,
+    fut3 = Torc.starmap_async(aggregate, pairs; verbose = verbose,
         callback = r -> println("[Callback] -> Aggregation complete - Result: $r."))
 
-    results3 = Torcalia.get(fut3); total_score = Base.sum(results3)
+    results3 = Torc.get(fut3); total_score = Base.sum(results3)
 
     expected_score = Base.sum(
                         aggregate(a, b; verbose = false) 
@@ -128,4 +128,4 @@ function main()
     @assert total_score == expected_score
 end
 
-Torcalia.init(main)
+Torc.init(main)

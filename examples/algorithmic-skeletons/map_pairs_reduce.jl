@@ -45,7 +45,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 map_pairs_reduce.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(a::Int, b::Int)::Float64 = a + b
 
@@ -56,17 +56,17 @@ function main()
     
     a = 1:N_a; b = N_b:-1:1
 
-    result_1d_row = Torcalia.mapPairsReduce(work, aggregate, a, b; mode = "1d", direction = :row)
+    result_1d_row = Torc.mapPairsReduce(work, aggregate, a, b; mode = "1d", direction = :row)
     
     @assert result_1d_row == [Base.reduce((x, y) -> aggregate(x, y), [work(x, y) for y in b]) for x in a]
 
-    result_1d_col = Torcalia.mapPairsReduce(work, aggregate, a, b; mode = "1d", direction = :column)
+    result_1d_col = Torc.mapPairsReduce(work, aggregate, a, b; mode = "1d", direction = :column)
     
     @assert result_1d_col == [Base.reduce((x, y) -> aggregate(x, y), [work(x, y) for x in a]) for y in b]
 
-    result_2d = Torcalia.mapPairsReduce(work, aggregate, a, b; mode = "2d")
+    result_2d = Torc.mapPairsReduce(work, aggregate, a, b; mode = "2d")
     
     @assert result_2d == Base.reduce((x, y) -> aggregate(x, y), [work(x, y) for x in a, y in b])
 end
 
-Torcalia.init(main)
+Torc.init(main)

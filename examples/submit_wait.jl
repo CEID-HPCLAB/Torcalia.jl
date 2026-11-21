@@ -31,7 +31,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 submit_wait.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
     x^3
@@ -44,12 +44,12 @@ function main()
     
     println("Submitting $ntasks tasks.")
     
-    tasks = [Torcalia.submit(work, x) for x in data]
+    tasks = [Torc.submit(work, x) for x in data]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
     for (i, task) in enumerate(tasks)
-        res = Torcalia.result(task)
+        res = Torc.result(task)
         println("Task $i: $(data[i])³ = $res.")
     end
 
@@ -57,11 +57,11 @@ function main()
     
     println("Submitting a task and waiting for it to complete using submit-wait.")
      
-    res = Torcalia.submit_wait(work, j)
+    res = Torc.submit_wait(work, j)
 
     println("Task $j: $(j)³ = $res.")
 
     println("All tasks completed successfully.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

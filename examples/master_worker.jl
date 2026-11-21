@@ -28,7 +28,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 master_worker.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(x::Int)::Int
     sleep(1)
@@ -36,7 +36,7 @@ function work(x::Int)::Int
     y = x^2
 
     println("Work: input = $x, output = $y \
-             on worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()).")
+             on worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()).")
     y
 end
 
@@ -47,15 +47,15 @@ function main()
 
     println("Submitting $ntasks tasks.")
 
-    t0 = Torcalia.gettime()
+    t0 = Torc.gettime()
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, x) for x in inputs]
+    Torc.wait(tasks)
 
-    elapsed = Torcalia.gettime() - t0
+    elapsed = Torc.gettime() - t0
     
     for (i, task) in enumerate(tasks)
-        y = Torcalia.result(task)
+        y = Torc.result(task)
         println("Task $i: $(inputs[i])² = $y.")
     end
 
@@ -63,4 +63,4 @@ function main()
     println("Total elapsed time: $(round(elapsed, digits = 3)) seconds.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

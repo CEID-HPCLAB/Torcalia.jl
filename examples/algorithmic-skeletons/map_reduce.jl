@@ -42,7 +42,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 map_reduce.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Int = x^2
 
@@ -57,9 +57,9 @@ function main()
     println("[Reduce] Each task aggregates $chunksize elements.")
     println("Expected number of tasks = $(2 * ceil(Int, N / chunksize)).")
 
-    result = Torcalia.mapReduce(work, aggregate, data; chunksize = chunksize)
+    result = Torc.mapReduce(work, aggregate, data; chunksize = chunksize)
 
     @assert result == Base.reduce((a, b) -> aggregate(a, b), [work(x) for x in data])
 end
 
-Torcalia.init(main)
+Torc.init(main)

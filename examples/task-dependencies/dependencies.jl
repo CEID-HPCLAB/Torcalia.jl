@@ -42,27 +42,27 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 dependencies.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 square(x::Int)::Int = x^2
 
-double(x::Torcalia.Future)::Int = 2 * Torcalia.result(x)
+double(x::Torc.Future)::Int = 2 * Torc.result(x)
 
-function add(x::Torcalia.Future, y::Torcalia.Future)::Int
-    Torcalia.result(x) + Torcalia.result(y)
+function add(x::Torc.Future, y::Torc.Future)::Int
+    Torc.result(x) + Torc.result(y)
 end
 
 function main()
-    taskA = Torcalia.submit(square, 2) # 4
-    taskB = Torcalia.submit(square, 4) # 16
+    taskA = Torc.submit(square, 2) # 4
+    taskB = Torc.submit(square, 4) # 16
 
-    taskC = Torcalia.submit(add, taskA, taskB) # 4 + 16 = 20
-    taskD = Torcalia.submit(double, taskA) # 2 * 4 = 8
+    taskC = Torc.submit(add, taskA, taskB) # 4 + 16 = 20
+    taskD = Torc.submit(double, taskA) # 2 * 4 = 8
 
-    Torcalia.wait([taskC, taskD])
+    Torc.wait([taskC, taskD])
 
-    @assert Torcalia.result(taskC) == 20
-    @assert Torcalia.result(taskD) == 8
+    @assert Torc.result(taskC) == 20
+    @assert Torc.result(taskD) == 8
 end
 
-Torcalia.init(main)
+Torc.init(main)

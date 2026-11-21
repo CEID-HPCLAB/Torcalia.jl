@@ -36,7 +36,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 callback_reduction.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 global_sum = 0
 sum_lock = ReentrantLock()  
@@ -60,8 +60,8 @@ function main()
     
     println("Computing sum of squares from 1 to $ntasks using callbacks.")
     
-    tasks = [Torcalia.submit(work, x; callback = cb, async_callback = false) for x in data]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, x; callback = cb, async_callback = false) for x in data]
+    Torc.wait(tasks)
 
     println("Sum of squares from 1 to $ntasks: $global_sum.")
     println("Expected: $(sum(x^2 for x in 1:ntasks)).")
@@ -71,4 +71,4 @@ function main()
     println("All tasks completed successfully.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

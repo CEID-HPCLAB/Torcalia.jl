@@ -38,7 +38,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 map2.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(a::Float64, b::Float64)::Float64 = a * b
 
@@ -50,9 +50,9 @@ function main()
     println("Each task computes the product of $chunksize elements from two input iterables.")
     println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
 
-    results = Torcalia.map(work, a, b; chunksize = chunksize)
+    results = Torc.map(work, a, b; chunksize = chunksize)
 
     @assert results == [x * y for (x, y) in zip(a, b)]
 end
 
-Torcalia.init(main)
+Torc.init(main)

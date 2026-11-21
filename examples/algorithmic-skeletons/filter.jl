@@ -39,7 +39,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 filter.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Bool = x % 2 == 0
 
@@ -51,9 +51,9 @@ function main()
     println("Each task filters $chunksize elements.")
     println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
     
-    results = Torcalia.filter(work, data; chunksize = chunksize)
+    results = Torc.filter(work, data; chunksize = chunksize)
 
     @assert results == [x for x in data if x % 2 == 0]
 end
 
-Torcalia.init(main)
+Torc.init(main)

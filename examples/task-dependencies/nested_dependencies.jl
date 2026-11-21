@@ -46,7 +46,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 nested_dependencies.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Crayons
 
@@ -62,8 +62,8 @@ function workA(x::Int)::Int
     result
 end
 
-function workB(x::Torcalia.Future)::Int
-    x = Torcalia.result(x)
+function workB(x::Torc.Future)::Int
+    x = Torc.result(x)
     
     println(Crayon(foreground = :cyan)("Task B started → Input: Task A = $x."))
 
@@ -88,20 +88,20 @@ function workC(x::Int)::Int
     result
 end
 
-function workD(x::Torcalia.Future, y::Torcalia.Future)::Int
-    x = Torcalia.result(x) # 40
-    y = Torcalia.result(y) # 8
+function workD(x::Torc.Future, y::Torc.Future)::Int
+    x = Torc.result(x) # 40
+    y = Torc.result(y) # 8
     
     println(Crayon(foreground = :green)("Task D started → Inputs: Task B = $x, Task C = $y."))
  
-    taskE = Torcalia.submit(workE, x) # 40 + 1 = 41     
-    taskF = Torcalia.submit(workF, y) # 8 * 3 = 24    
-    taskG = Torcalia.submit(workG, taskE, taskF) # 41 + 24 = 65
-    taskH = Torcalia.submit(workH, taskG) # 65 - 10 = 55
+    taskE = Torc.submit(workE, x) # 40 + 1 = 41     
+    taskF = Torc.submit(workF, y) # 8 * 3 = 24    
+    taskG = Torc.submit(workG, taskE, taskF) # 41 + 24 = 65
+    taskH = Torc.submit(workH, taskG) # 65 - 10 = 55
 
-    Torcalia.wait(taskH)
+    Torc.wait(taskH)
 
-    result = 4 * Torcalia.result(taskH) # 4 * 55 = 220
+    result = 4 * Torc.result(taskH) # 4 * 55 = 220
     
     println(Crayon(foreground = :green)("Task D completed → Result: $result."))
 
@@ -132,9 +132,9 @@ function workF(y::Int)::Int
     result
 end
 
-function workG(x::Torcalia.Future, y::Torcalia.Future)::Int
-    x = Torcalia.result(x)
-    y = Torcalia.result(y)
+function workG(x::Torc.Future, y::Torc.Future)::Int
+    x = Torc.result(x)
+    y = Torc.result(y)
 
     println(Crayon(foreground = :magenta)("Task G started → Inputs: Task E = $x, Task F = $y."))
 
@@ -147,8 +147,8 @@ function workG(x::Torcalia.Future, y::Torcalia.Future)::Int
     result
 end
 
-function workH(x::Torcalia.Future)::Int
-    x = Torcalia.result(x)
+function workH(x::Torc.Future)::Int
+    x = Torc.result(x)
 
     println(Crayon(foreground = (255, 100, 0))("Task H started → Input: Task G = $x."))
     
@@ -165,18 +165,18 @@ function main()
     x = 5; y = 10
     
     # Comment the following line to disable work stealing 
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
-    taskA = Torcalia.submit(workA, x) # 2 * 5 = 10
-    taskB = Torcalia.submit(workB, taskA) # 4 * 10 = 40 
-    taskC = Torcalia.submit(workC, y) # 10 - 2 = 8
-    taskD = Torcalia.submit(workD, taskB, taskC) # 220
+    taskA = Torc.submit(workA, x) # 2 * 5 = 10
+    taskB = Torc.submit(workB, taskA) # 4 * 10 = 40 
+    taskC = Torc.submit(workC, y) # 10 - 2 = 8
+    taskD = Torc.submit(workD, taskB, taskC) # 220
 
-    Torcalia.wait(taskD)
+    Torc.wait(taskD)
 
-    result = 6 * Torcalia.result(taskD) # 6 * 220 = 1320
+    result = 6 * Torc.result(taskD) # 6 * 220 = 1320
 
     @assert result == 1320
 end
 
-Torcalia.init(main)
+Torc.init(main)

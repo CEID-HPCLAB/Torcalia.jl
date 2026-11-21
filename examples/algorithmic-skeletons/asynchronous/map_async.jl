@@ -101,7 +101,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 map_async.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function fetch_data(id::Int; verbose::Bool = true)::Dict{String, Int}
     sleep(1)
@@ -173,42 +173,42 @@ function main()
     # Set verbose to false to reduce output clutter
     verbose = true
     
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
     println("[Work Stealing] -> Enabled.")
     
-    fetch_fut = Torcalia.map_async(fetch_data, data; verbose = verbose,
+    fetch_fut = Torc.map_async(fetch_data, data; verbose = verbose,
         callback = r -> println("[Callback] -> Fetch complete: $(length(r)) items."))
     
-    work1_fut = Torcalia.map_async(work1, vec; verbose = verbose,
+    work1_fut = Torc.map_async(work1, vec; verbose = verbose,
         callback = r -> println("[Callback] -> Work1 complete - Result: $r."))
     
-    !Torcalia.ready(fetch_fut) ? println("Waiting for fetch results...") : nothing
+    !Torc.ready(fetch_fut) ? println("Waiting for fetch results...") : nothing
     
-    fetched_data = Torcalia.get(fetch_fut)
+    fetched_data = Torc.get(fetch_fut)
     
-    work2_fut = Torcalia.map_async(work2, fetched_data; verbose = verbose, chunksize = 2,
+    work2_fut = Torc.map_async(work2, fetched_data; verbose = verbose, chunksize = 2,
         callback = r -> println("[Callback] -> Work2 complete: $(length(r)) items."))
     
-    !Torcalia.ready(work1_fut) ? println("Waiting for work1 results...") : nothing
+    !Torc.ready(work1_fut) ? println("Waiting for work1 results...") : nothing
     
-    work1_results = Torcalia.get(work1_fut)
+    work1_results = Torc.get(work1_fut)
 
-    !Torcalia.ready(work2_fut) ? println("Waiting for work2 results...") : nothing
+    !Torc.ready(work2_fut) ? println("Waiting for work2 results...") : nothing
     
-    work2_results = Torcalia.get(work2_fut)
+    work2_results = Torc.get(work2_fut)
     
-    agg_fut = Torcalia.map_async(aggregate, [work2_results]; verbose = verbose,
+    agg_fut = Torc.map_async(aggregate, [work2_results]; verbose = verbose,
         callback = r -> println("[Callback] -> Aggregation complete - Result: $(r[1]["average"]) (Average), $(r[1]["total"]) (Total)."))
     
-    batch_fut = Torcalia.map_async(work_batch, arr; verbose = verbose,
+    batch_fut = Torc.map_async(work_batch, arr; verbose = verbose,
         callback = r -> println("[Callback] -> Batch processing complete - Result: $r."))
     
-    !Torcalia.ready(agg_fut) ? println("Waiting for aggregation results...") : nothing
+    !Torc.ready(agg_fut) ? println("Waiting for aggregation results...") : nothing
     
-    !Torcalia.ready(batch_fut) ? println("Waiting for batch processing results...") : nothing
+    !Torc.ready(batch_fut) ? println("Waiting for batch processing results...") : nothing
     
-    agg_results = Torcalia.get(agg_fut); batch_results = Torcalia.get(batch_fut)
+    agg_results = Torc.get(agg_fut); batch_results = Torc.get(batch_fut)
     
     total_score = agg_results[1]["total"] + Base.sum(batch_results) + Base.sum(work1_results)
 
@@ -223,4 +223,4 @@ function main()
     @assert total_score == expected_score
 end
 
-Torcalia.init(main)
+Torc.init(main)

@@ -37,37 +37,37 @@ Julia >= v1.12:
 Run: mpiexecjl -n 8 julia --project=/path/to/julia/environment --threads 2,0 dsm.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work(A::Vector{Int})
-    rank = Torcalia.node_id(); A[rank + 1] = rank
-    Torcalia.argo_barrier(1)
+    rank = Torc.node_id(); A[rank + 1] = rank
+    Torc.argo_barrier(1)
 end
 
 function main()
-    N = Torcalia.num_nodes()
+    N = Torc.num_nodes()
     
-    A = Torcalia.pdsm_alloc(Int(N), Int)
+    A = Torc.pdsm_alloc(Int(N), Int)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Allocated ArgoDSM array A ($N integer elements).")
+    println("[MPI Rank: $(Torc.node_id())] Allocated ArgoDSM array A ($N integer elements).")
     
     for i in 1:N A[i] = 1 end
 
-    println("[MPI Rank: $(Torcalia.node_id())] Initial values of A: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Initial values of A: $A.")
     
-    tasks = Vector{Torcalia.Future}(undef, N)
+    tasks = Vector{Torc.Future}(undef, N)
     
     for i in 0:N-1
-        tasks[i+1] = Torcalia.submit(work, A; node = i)
+        tasks[i+1] = Torc.submit(work, A; node = i)
     end
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Final values of A after all tasks completed: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Final values of A after all tasks completed: $A.")
 
     @assert A == collect(Int, 0:N-1)
 end
 
 # Configure the ArgoDSM memory and cache capacities
-Torcalia.argo_init(1024*1024, 1024*4)
-Torcalia.init(main)
+Torc.argo_init(1024*1024, 1024*4)
+Torc.init(main)

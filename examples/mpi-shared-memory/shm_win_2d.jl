@@ -31,7 +31,14 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2,0 shm_win_2d.jl
 """
 
-using Torcalia
+import Torcalia as Torc
+
+nodes = Torc.num_nodes()
+
+if nodes < 2
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
+    exit()
+end
 
 function work(; A::Matrix{Int}, row::Int)
     old_vals = A[row, :]
@@ -42,39 +49,32 @@ function work(; A::Matrix{Int}, row::Int)
     
     new_vals = A[row, :]
     
-    println("[MPI Rank: $(Torcalia.node_id())] Worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()) \
+    println("[MPI Rank: $(Torc.node_id())] Worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()) \
              updated row $row from $old_vals to $new_vals.")
 end
 
 function main()
-    nodes = Torcalia.num_nodes()
-
-    if nodes < 2
-        println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
-        exit()
-    end
-
     nrows = Int(nodes); ncols = 4
     
-    A = Torcalia.shw_alloc((nrows, ncols), Int)
+    A = Torc.shw_alloc((nrows, ncols), Int)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Allocated 2D MPI shared-memory array A ($nrows x $ncols, Int).")
+    println("[MPI Rank: $(Torc.node_id())] Allocated 2D MPI shared-memory array A ($nrows x $ncols, Int).")
 
-    if Torcalia.node_id() == 0
+    if Torc.node_id() == 0
         for i in 1:nrows, j in 1:ncols
             A[i, j] = 100 * (i - 1) + j
         end
     end
 
-    println("[MPI Rank: $(Torcalia.node_id())] Initial values of A: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Initial values of A: $A.")
 
-    tasks = [Torcalia.submit(work; A = A, row = i, node = i-1) for i in 1:nrows]
+    tasks = [Torc.submit(work; A = A, row = i, node = i-1) for i in 1:nrows]
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Final values of A after all tasks completed: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Final values of A after all tasks completed: $A.")
 
     @assert A == [100 * (i - 1) + 5 * i + 2 * j for i in 1:nrows, j in 1:ncols]
 end
 
-Torcalia.init(main)
+Torc.init(main)

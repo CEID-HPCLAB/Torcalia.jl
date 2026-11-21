@@ -47,50 +47,50 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 task_pinning.jl
 """
 
-using Torcalia
+import Torcalia as Torc
+
+nodes = Torc.num_nodes()
+
+if nodes < 2
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
+    exit()
+end
+
+local_workers = Torc.num_local_workers()
+
+if local_workers > 1
+    println("[MPI Rank: $(Torc.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
+    exit()
+end
 
 function work(x::Int)::Int
-    Torcalia.node_id() % 2 == 0 ? sleep(0.2) : nothing
+    Torc.node_id() % 2 == 0 ? sleep(0.2) : nothing
     
     y = x * x
     
-    println("Node $(Torcalia.node_id()) (worker thread $(Torcalia.worker_local_id())): work (input = $x, output = $y).")
+    println("Node $(Torc.node_id()) (worker thread $(Torc.worker_local_id())): work (input = $x, output = $y).")
 
     y
 end
 
 function main()
-    nodes = Torcalia.num_nodes()
-
-    if nodes < 2
-        println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
-        exit()
-    end
-
-    local_workers = Torcalia.num_local_workers()
-
-    if local_workers > 1
-        println("[MPI Rank: $(Torcalia.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
-        exit()
-    end
-    
     ntasks = 10
     
     println("Scenario 1: Pinned to node 0, work stealing disabled (default).")
 
-    tasks = [Torcalia.submit(work, i; node = 0) for i in 1:ntasks]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, i; node = 0) for i in 1:ntasks]
+    Torc.wait(tasks)
 
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
     println("\nScenario 2: Pinned to node 0, work stealing enabled and forced_node = false (tasks can be stolen).")
 
-    tasks = [Torcalia.submit(work, i; node = 0) for i in 1:ntasks]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, i; node = 0) for i in 1:ntasks]
+    Torc.wait(tasks)
 
     println("\nScenario 3: Pinned to node 0, work stealing enabled and forced_node = true (tasks cannot be stolen).")
 
-    tasks = [Torcalia.submit(work, i; node = 0, forced_node = true) for i in 1:ntasks]
-    Torcalia.wait(tasks)
+    tasks = [Torc.submit(work, i; node = 0, forced_node = true) for i in 1:ntasks]
+    Torc.wait(tasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)

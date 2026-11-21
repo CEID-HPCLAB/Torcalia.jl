@@ -34,7 +34,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 5,0 query.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Crayons
 
@@ -46,23 +46,23 @@ COLORS = Dict(
 )
 
 function work()
-    node_id = Torcalia.node_id()
+    node_id = Torc.node_id()
     
-    global_worker_id = Torcalia.worker_id()
-    local_worker_id = Torcalia.worker_local_id()
+    global_worker_id = Torc.worker_id()
+    local_worker_id = Torc.worker_local_id()
     
     println(Crayon(foreground = COLORS[node_id]), "[MPI Rank: $node_id] Worker thread global ID: $global_worker_id, Worker thread local ID: $local_worker_id.")
 end
 
 function main()
-    nodes = Torcalia.num_nodes()
-    node_id = Torcalia.node_id()
+    nodes = Torc.num_nodes()
+    node_id = Torc.node_id()
 
-    total_workers = Torcalia.num_workers()
-    workers_per_node = Torcalia.num_local_workers()
+    total_workers = Torc.num_workers()
+    workers_per_node = Torc.num_local_workers()
     
-    global_worker_id = Torcalia.worker_id()
-    local_worker_id = Torcalia.worker_local_id()
+    global_worker_id = Torc.worker_id()
+    local_worker_id = Torc.worker_local_id()
     
     println("[MPI Rank: $node_id] Number of MPI nodes: $nodes.")
     println("[MPI Rank: $node_id] Total number of Julia worker threads: $total_workers.")
@@ -70,9 +70,9 @@ function main()
     println("[MPI Rank: $node_id] Worker thread global ID (Main Thread): $global_worker_id.")
     println("[MPI Rank: $node_id] Worker thread local ID (Main Thread): $local_worker_id.\n")
 
-    tasks = [Torcalia.submit(work; node = (i - 1) % nodes) for i in 1:total_workers]
+    tasks = [Torc.submit(work; node = (i - 1) % nodes) for i in 1:total_workers]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 end
 
-Torcalia.init(main)
+Torc.init(main)
