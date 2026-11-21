@@ -35,12 +35,12 @@ Julia >= v1.12:
 Run: mpiexecjl -n 8 julia --project=/path/to/julia/environment --threads 2,0 shm_win.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
@@ -51,31 +51,31 @@ function work(idx::Int; A::Vector{Int})
 
     new_value = A[idx]
     
-    println("[MPI Rank: $(Torcalia.node_id())] Worker thread $(Torcalia.worker_local_id()) of node $(Torcalia.node_id()) updated A[$idx] from $old_value to $new_value.")
+    println("[MPI Rank: $(Torc.node_id())] Worker thread $(Torc.worker_local_id()) of node $(Torc.node_id()) updated A[$idx] from $old_value to $new_value.")
 end
 
 function main()
     N = Int(nodes)
     
-    A = Torcalia.shw_alloc((N,), Int)
+    A = Torc.shw_alloc((N,), Int)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Allocated MPI shared-memory array A ($N integer elements).")
+    println("[MPI Rank: $(Torc.node_id())] Allocated MPI shared-memory array A ($N integer elements).")
 
-    if Torcalia.node_id() == 0
+    if Torc.node_id() == 0
         for i in 1:N
             A[i] = 100 * (i - 1)
         end
     end
 
-    println("[MPI Rank: $(Torcalia.node_id())] Initial values of A: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Initial values of A: $A.")
 
-    tasks = [Torcalia.submit(work, i; A = A, node = i-1) for i in 1:Int(N)]
+    tasks = [Torc.submit(work, i; A = A, node = i-1) for i in 1:Int(N)]
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    println("[MPI Rank: $(Torcalia.node_id())] Final values of A after all tasks completed: $A.")
+    println("[MPI Rank: $(Torc.node_id())] Final values of A after all tasks completed: $A.")
 
     @assert A == [100 * (i - 1) + 5 * i for i in 1:Int(N)]
 end
 
-Torcalia.init(main)
+Torc.init(main)

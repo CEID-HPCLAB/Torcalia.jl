@@ -41,28 +41,28 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 work_stealing.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
-local_workers = Torcalia.num_local_workers()
+local_workers = Torc.num_local_workers()
 
 if local_workers > 1
-    println("[MPI Rank: $(Torcalia.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example should use one Julia worker thread per MPI process. exiting...")
     exit()
 end
 
 function work(x::Int)::Int
-    Torcalia.node_id() % 2 == 0 ? sleep(0.2) : nothing
+    Torc.node_id() % 2 == 0 ? sleep(0.2) : nothing
     
     y = x^4
     
-    println("Node $(Torcalia.node_id()) (worker thread $(Torcalia.worker_local_id())): work (input = $x, output = $y).")
+    println("Node $(Torc.node_id()) (worker thread $(Torc.worker_local_id())): work (input = $x, output = $y).")
     
     y
 end
@@ -70,49 +70,49 @@ end
 function main()
     ntasks = 40
     
-    Torcalia.enable_stealing()
+    Torc.enable_stealing()
 
     println("Case 1: Submitting $ntasks tasks with work stealing enabled.")
 
-    t0 = Torcalia.gettime()
+    t0 = Torc.gettime()
     
-    tasks = Torcalia.Future[]
+    tasks = Torc.Future[]
     
     for i in 1:ntasks
-        push!(tasks, Torcalia.submit(work, i))
+        push!(tasks, Torc.submit(work, i))
     end
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
     
-    elapsed = Torcalia.gettime() - t0
+    elapsed = Torc.gettime() - t0
 
     for (i, task) in enumerate(tasks)
-        println("Task $i: $(Torcalia.input(task)...)^4 = $(Torcalia.result(task)).")
+        println("Task $i: $(Torc.input(task)...)^4 = $(Torc.result(task)).")
     end
 
     println("Total elapsed time (Case 1): $(round(elapsed, digits = 3)) seconds.")
 
-    Torcalia.disable_stealing()
+    Torc.disable_stealing()
 
     println("\nCase 2: Submitting $ntasks tasks with work stealing disabled.")
 
-    t0 = Torcalia.gettime()
+    t0 = Torc.gettime()
     
-    tasks = Torcalia.Future[]
+    tasks = Torc.Future[]
     
     for i in 1:ntasks
-        push!(tasks, Torcalia.submit(work, i))
+        push!(tasks, Torc.submit(work, i))
     end
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
     
-    elapsed = Torcalia.gettime() - t0
+    elapsed = Torc.gettime() - t0
 
     for (i, task) in enumerate(tasks)
-        println("Task $i: $(Torcalia.input(task)...)^4 = $(Torcalia.result(task)).")
+        println("Task $i: $(Torc.input(task)...)^4 = $(Torc.result(task)).")
     end
 
     println("Total elapsed time (Case 2): $(round(elapsed, digits = 3)) seconds.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

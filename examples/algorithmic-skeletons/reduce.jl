@@ -49,7 +49,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 reduce.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Random
    
@@ -64,7 +64,7 @@ function main()
     println("Vector size: $(length(vec)).")
     println("Matrix size: $(size(mat)).")
     
-    result_vec = Torcalia.reduce(
+    result_vec = Torc.reduce(
         work,
         vec;
         args = (10,),
@@ -73,7 +73,7 @@ function main()
 
     @assert result_vec == Base.reduce((a, b) -> work(a, b, 10), vec)
     
-    result_1d_col = Torcalia.reduce(
+    result_1d_col = Torc.reduce(
         work,
         mat;
         args = (5,),
@@ -83,7 +83,7 @@ function main()
     
     @assert result_1d_col == [Base.reduce((a, b) -> work(a, b, 5), mat[:, i]) for i in 1:size(mat, 2)]
     
-    result_1d_row = Torcalia.reduce(
+    result_1d_row = Torc.reduce(
         work,
         mat;
         args = (-2,),
@@ -93,7 +93,7 @@ function main()
     
     @assert result_1d_row == [Base.reduce((a, b) -> work(a, b, -2), mat[i, :]) for i in 1:size(mat, 1)]
     
-    result_2d = Torcalia.reduce(
+    result_2d = Torc.reduce(
         work,
         mat;
         args = (8,),
@@ -104,4 +104,4 @@ function main()
     @assert result_2d == Base.reduce((a, b) -> work(a, b, 8), [Base.reduce((a, b) -> work(a, b, 8), mat[:, i]) for i in 1:size(mat, 2)])
 end
 
-Torcalia.init(main)
+Torc.init(main)

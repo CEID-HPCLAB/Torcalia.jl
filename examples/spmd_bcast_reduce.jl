@@ -35,14 +35,14 @@ Julia >= v1.12
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2,0 spmd_bcast_reduce.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using MPI
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
@@ -55,7 +55,7 @@ function bcast_task()
 end
 
 function local_computation()
-    node_id = Torcalia.node_id()
+    node_id = Torc.node_id()
     
     A .*= node_id
     
@@ -63,7 +63,7 @@ function local_computation()
 end
 
 function reduce_task()
-    node_id = Torcalia.node_id()
+    node_id = Torc.node_id()
 
     comm = MPI.COMM_WORLD
     result = MPI.Allreduce(A, +, comm)
@@ -72,7 +72,7 @@ function reduce_task()
 end
 
 function main()
-    println("Running with $(Torcalia.num_nodes()) MPI nodes.")
+    println("Running with $(Torc.num_nodes()) MPI nodes.")
 
     for i in 1:N
         A[i] = 100 * (i - 1)
@@ -80,11 +80,11 @@ function main()
     
     println("Node 0 (initialization): A = $A.")
 
-    Torcalia.spmd(bcast_task)
-    Torcalia.spmd(local_computation)
-    Torcalia.spmd(reduce_task)
+    Torc.spmd(bcast_task)
+    Torc.spmd(local_computation)
+    Torc.spmd(reduce_task)
     
     println("All nodes completed their assigned tasks successfully.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

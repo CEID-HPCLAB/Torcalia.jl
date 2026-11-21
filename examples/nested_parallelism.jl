@@ -31,27 +31,27 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 nested_parallelism.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function fibonacci(n::Int)::Int
     n < 2 && return n
     n < 30 && return fibonacci(n - 1) + fibonacci(n - 2)
 
-    taskA = Torcalia.submit(fibonacci, n - 1)
-    taskB = Torcalia.submit(fibonacci, n - 2)
+    taskA = Torc.submit(fibonacci, n - 1)
+    taskB = Torc.submit(fibonacci, n - 2)
 
-    Torcalia.wait([taskA, taskB])
-    Torcalia.result(taskA) + Torcalia.result(taskB)
+    Torc.wait([taskA, taskB])
+    Torc.result(taskA) + Torc.result(taskB)
 end
 
 function main()
     N = 45
 
-    t0 = Torcalia.gettime()
+    t0 = Torc.gettime()
    
     value = fibonacci(N)
 
-    elapsed = Torcalia.gettime() - t0
+    elapsed = Torc.gettime() - t0
    
     @assert value == 1_134_903_170
     
@@ -60,4 +60,4 @@ function main()
     println("Total elapsed time: $(round(elapsed, digits = 3)) seconds.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

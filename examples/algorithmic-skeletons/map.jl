@@ -38,7 +38,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 map.jl
 """
     
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int)::Int = x^2
 
@@ -50,9 +50,9 @@ function main()
     println("Each task computes the square of $chunksize elements.")
     println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
     
-    results = Torcalia.map(work, data; chunksize = chunksize)
+    results = Torc.map(work, data; chunksize = chunksize)
 
     @assert results == [x^2 for x in data]
 end
 
-Torcalia.init(main)
+Torc.init(main)

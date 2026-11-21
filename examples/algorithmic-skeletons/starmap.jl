@@ -48,7 +48,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 starmap.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int, y::Int, a::Int, b::Int)::Int = (x + y + a) * b
 
@@ -62,9 +62,9 @@ function main()
     println("Each task computes the work function for $chunksize elements.")
     println("Expected number of tasks = $(ceil(Int, N / chunksize)).")
     
-    results = Torcalia.starmap(work, data; chunksize = chunksize, args = (a, b))
+    results = Torc.starmap(work, data; chunksize = chunksize, args = (a, b))
 
     @assert results == [(x + y + a) * b for (x, y) in data]
 end
 
-Torcalia.init(main)
+Torc.init(main)

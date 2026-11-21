@@ -57,7 +57,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 5,0 async_processing.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function work1(a::Int, b::Int; verbose::Bool = true)::Int
     sleep(0.7 + rand())
@@ -105,20 +105,20 @@ function main()
     # Set verbose to false to reduce output clutter
     verbose = true
 
-    fut1 = Torcalia.starmap_async(work1, pairs; verbose = verbose,
+    fut1 = Torc.starmap_async(work1, pairs; verbose = verbose,
         callback = r -> println("[Callback] -> Starmap (Work1) complete: $(length(r)) items."))
 
-    fut2 = Torcalia.map_async(work2, numbers; verbose = verbose, chunksize = 4,
+    fut2 = Torc.map_async(work2, numbers; verbose = verbose, chunksize = 4,
         callback = r -> println("[Callback] -> Map (Work2) complete: $(length(r)) items."))
 
-    results1 = Torcalia.get(fut1)
+    results1 = Torc.get(fut1)
     
-    results2  = Torcalia.get(fut2)
+    results2  = Torc.get(fut2)
 
-    fut3 = Torcalia.map_async(aggregate, [results1, results2]; verbose = verbose,
+    fut3 = Torc.map_async(aggregate, [results1, results2]; verbose = verbose,
         callback = r -> println("[Callback] -> Aggregation complete: $(length(r)) items."))
 
-    results3 = Torcalia.get(fut3)
+    results3 = Torc.get(fut3)
 
     total_score = results3[1]["total"] + results3[2]["total"]
 
@@ -133,4 +133,4 @@ function main()
     @assert total_score == expected_score
 end
 
-Torcalia.init(main)
+Torc.init(main)

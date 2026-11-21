@@ -50,7 +50,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 8 julia --project=/path/to/julia/environment --threads 2,0 pipeline.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using AstroImages
 using ImageMorphology
@@ -208,18 +208,18 @@ function process_image(index::Int, image_name::String, tar_file::String, shw_ima
 
     chunk_size = cld(size(image_data)[end], 2)
 
-    node = Torcalia.node_id()
+    node = Torc.node_id()
 
     # Second level of parallelism -> process the image in chunks to compute the flux and weighted coordinates for each source label
-    tasks = Torcalia.wait([Torcalia.submit(compute_flux_chunk, shw_images, shw_labels, index, start_idx, 
-                              min(start_idx + chunk_size - 1, size(image_data)[end]), num_labels; node = mod(node + size(image_data)[end], Torcalia.num_nodes()))
+    tasks = Torc.wait([Torc.submit(compute_flux_chunk, shw_images, shw_labels, index, start_idx, 
+                              min(start_idx + chunk_size - 1, size(image_data)[end]), num_labels; node = mod(node + size(image_data)[end], Torc.num_nodes()))
                               for start_idx in 1:chunk_size:size(image_data)[end]]; return_completed = true)
 
     pixels_sum = zeros(Float64, num_labels)
     weighted_coords = zeros(Float64, num_dims, num_labels)
 
     for task in tasks
-        chunk_sum, chunk_weighted_coords = Torcalia.result(task)
+        chunk_sum, chunk_weighted_coords = Torc.result(task)
         
         # Reduce the partial results to obtain the final measurements for each source
         pixels_sum .+= chunk_sum
@@ -244,25 +244,25 @@ function main()
     shw_dims = (spatial_dims[1], spatial_dims[2], length(IMAGE_FILES))
     
     # Allocate MPI shared memory windows for the image data and the corresponding labels
-    shw_images = Torcalia.shw_alloc(shw_dims, Float32)
-    shw_labels = Torcalia.shw_alloc(shw_dims, Int64)
+    shw_images = Torc.shw_alloc(shw_dims, Float32)
+    shw_labels = Torc.shw_alloc(shw_dims, Int64)
 
     data = [(index, file) for (index, file) in enumerate(IMAGE_FILES)]
 
-    num_nodes = Torcalia.num_nodes()
+    num_nodes = Torc.num_nodes()
 
-    t0 = Torcalia.gettime()
-    results = Torcalia.wait([Torcalia.submit(process_image, image[1], image[2], IMAGE_TAR_FILE, shw_images, 
+    t0 = Torc.gettime()
+    results = Torc.wait([Torc.submit(process_image, image[1], image[2], IMAGE_TAR_FILE, shw_images, 
                               shw_labels; node = mod(i - 1, num_nodes)) for (i, image) in enumerate(data)]; return_completed = true)
     
-    println("Total Processing Time: $(round(Torcalia.gettime() - t0, digits = 3)) seconds")
+    println("Total Processing Time: $(round(Torc.gettime() - t0, digits = 3)) seconds")
 
     for res in results
-        image_name, num_sources, pixels_sum, coms = Torcalia.result(res)
+        image_name, num_sources, pixels_sum, coms = Torc.result(res)
         brightest = length(pixels_sum) > 0 ? maximum(pixels_sum) : 0.0
         
         println("Image: $image_name, Number of Sources: $num_sources, Brightest Source Flux: $(round(brightest, digits = 3)).")
     end
 end
 
-Torcalia.init(main)
+Torc.init(main)

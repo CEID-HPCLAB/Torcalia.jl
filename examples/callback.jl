@@ -34,23 +34,23 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 callback.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 function cb_1(result::Int)
-    local_thread_id = Torcalia.worker_local_id()
-    println("Thread $local_thread_id on node $(Torcalia.node_id()): Callback 1 Result = $result.")
+    local_thread_id = Torc.worker_local_id()
+    println("Thread $local_thread_id on node $(Torc.node_id()): Callback 1 Result = $result.")
 end
 
 function cb_2(result::Int)
-    local_thread_id = Torcalia.worker_local_id()
-    println("Thread $local_thread_id on node $(Torcalia.node_id()): Callback 2 Result = $result.")
+    local_thread_id = Torc.worker_local_id()
+    println("Thread $local_thread_id on node $(Torc.node_id()): Callback 2 Result = $result.")
 end
 
 function work(x::Int)::Int
     y = x^2
     
-    local_thread_id = Torcalia.worker_local_id()
-    println("Thread $local_thread_id on node $(Torcalia.node_id()): Work input = $x, output = $y.")
+    local_thread_id = Torc.worker_local_id()
+    println("Thread $local_thread_id on node $(Torc.node_id()): Work input = $x, output = $y.")
     
     y
 end
@@ -63,20 +63,20 @@ function main()
     println("Submitting $ntasks tasks.")
 
     tasks = [
-        Torcalia.submit(work, x; 
+        Torc.submit(work, x; 
             callback = x % 2 == 0 ? cb_1 : cb_2, 
             async_callback = false
         ) for x in data
     ]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
     for (idx, task) in enumerate(tasks)
-        res = Torcalia.result(task)
-        println("Task $idx: $(Torcalia.input(task)[1])² = $res.")
+        res = Torc.result(task)
+        println("Task $idx: $(Torc.input(task)[1])² = $res.")
     end
 
     println("All tasks completed successfully.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

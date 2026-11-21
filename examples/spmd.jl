@@ -31,17 +31,17 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2,0 spmd.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
 function work(; multiplier::Int)::Tuple{Int, Int}
-    node_id = Torcalia.node_id()
+    node_id = Torc.node_id()
     
     A = [(node_id * 10 + i) * multiplier for i in 1:node_id]
     
@@ -49,12 +49,12 @@ function work(; multiplier::Int)::Tuple{Int, Int}
 end
 
 function main()
-    println("Running with $(Torcalia.num_nodes()) MPI nodes.")
+    println("Running with $(Torc.num_nodes()) MPI nodes.")
     
-    tasks = Torcalia.spmd(work; multiplier = 2)
+    tasks = Torc.spmd(work; multiplier = 2)
     
     for (i, task) in enumerate(tasks)
-        res = Torcalia.result(task)
+        res = Torc.result(task)
         
         println("Node $(res[2]): sum(A) = $(res[1]).")
     end
@@ -62,4 +62,4 @@ function main()
     println("All nodes completed their assigned task successfully.")
 end
 
-Torcalia.init(main)
+Torc.init(main)

@@ -43,7 +43,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 3,0 scan.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 work(x::Int, y::Int; k::Int = 0)::Int = x + y - k
 
@@ -52,13 +52,13 @@ function main()
     
     data = collect(Int64, 1:N)
     
-    results_excl = Torcalia.scan(work, data; chunksize = chunksize, mode = "exclusive")
+    results_excl = Torc.scan(work, data; chunksize = chunksize, mode = "exclusive")
     
     @assert results_excl == [0; cumsum(data[1:end-1])]
 
-    results_incl = Torcalia.scan(work, data; chunksize = chunksize, mode = "inclusive")
+    results_incl = Torc.scan(work, data; chunksize = chunksize, mode = "inclusive")
 
     @assert results_incl == cumsum(data)
 end
 
-Torcalia.init(main)
+Torc.init(main)

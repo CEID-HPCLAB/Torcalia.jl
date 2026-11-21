@@ -39,12 +39,12 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 2,0 mpi_interoperability.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[Node: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[Node: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
@@ -72,7 +72,7 @@ function mpi_gather_inside()
 end
 
 function torcalia_gather()
-    Torcalia.spmd(mpi_gather_inside)
+    Torc.spmd(mpi_gather_inside)
 end
 
 function mpi_allreduce_outside()
@@ -95,13 +95,13 @@ function mpi_allreduce_inside()
 end
 
 function torcalia_allreduce()
-    Torcalia.spmd(mpi_allreduce_inside)
+    Torc.spmd(mpi_allreduce_inside)
 end
 
 mpi_gather_outside()
 
-Torcalia.init(torcalia_gather; MPI_finalize = false)
+Torc.init(torcalia_gather; MPI_finalize = false)
 
 mpi_allreduce_outside()
 
-Torcalia.init(torcalia_allreduce)
+Torc.init(torcalia_allreduce)

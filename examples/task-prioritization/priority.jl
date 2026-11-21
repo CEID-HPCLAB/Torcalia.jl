@@ -38,7 +38,7 @@ Julia >= v1.12:
 Run: mpiexecjl -n 2 julia --project=/path/to/julia/environment --threads 2,0 priority.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
 using Crayons
 
@@ -48,7 +48,7 @@ const PRIORITY_COLOR = Dict(
     :high   => :red
 )
 
-function work(i::Int, p::Torcalia.TaskPriorityLevel)
+function work(i::Int, p::Torc.TaskPriorityLevel)
     sleep(0.5)
     
     cr = Crayon(foreground = PRIORITY_COLOR[p.level])
@@ -59,20 +59,20 @@ function main()
     println(Crayon(foreground = :magenta)("Submitting 24 tasks: 8 low, 8 medium, 8 high priority."))
     
     priorities = vcat(
-        fill(Torcalia.TaskPriority.low, 8),
-        fill(Torcalia.TaskPriority.medium, 8),
-        fill(Torcalia.TaskPriority.high, 8)
+        fill(Torc.TaskPriority.low, 8),
+        fill(Torc.TaskPriority.medium, 8),
+        fill(Torc.TaskPriority.high, 8)
     )
 
-    tasks = Torcalia.Future[]
+    tasks = Torc.Future[]
 
     for (i, p) in enumerate(priorities)
-        push!(tasks, Torcalia.submit(work, i, p; priority = p))
+        push!(tasks, Torc.submit(work, i, p; priority = p))
     end
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
     
     println(Crayon(foreground = :magenta)("All tasks completed successfully."))
 end
 
-Torcalia.init(main)
+Torc.init(main)

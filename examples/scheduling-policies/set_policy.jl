@@ -37,19 +37,19 @@ Julia >= v1.12:
 Run: mpiexecjl -n 4 julia --project=/path/to/julia/environment --threads 3,0 set_policy.jl
 """
 
-using Torcalia
+import Torcalia as Torc
 
-nodes = Torcalia.num_nodes()
+nodes = Torc.num_nodes()
 
 if nodes < 2
-    println("[MPI Rank: $(Torcalia.node_id())] this example needs at least two MPI processes. exiting...")
+    println("[MPI Rank: $(Torc.node_id())] this example needs at least two MPI processes. exiting...")
     exit()
 end
 
 function work(x::Int)::Int
-    node_id = Torcalia.node_id()
+    node_id = Torc.node_id()
 
-    local_worker_id = Torcalia.worker_local_id()
+    local_worker_id = Torc.worker_local_id()
 
     sleep(0.5)
     
@@ -71,54 +71,54 @@ function main()
     
     inputs = 1:ntasks
 
-    println("[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+    println("[MPI Rank: $(Torc.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
+    tasks = [Torc.submit(work, x) for x in inputs]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
     weights = [1, 1, 2, 3]
 
-    Torcalia.set_scheduling_policy(:WRR, weights)
+    Torc.set_scheduling_policy(:WRR, weights)
 
-    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: \
-             $(Torcalia.get_scheduling_policy()) with weights $weights.")
+    println("\n[MPI Rank: $(Torc.node_id())] Submitting $ntasks tasks. Scheduling policy: \
+             $(Torc.get_scheduling_policy()) with weights $weights.")
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
+    tasks = [Torc.submit(work, x) for x in inputs]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    Torcalia.set_scheduling_policy(:LOCAL)
+    Torc.set_scheduling_policy(:LOCAL)
 
-    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+    println("\n[MPI Rank: $(Torc.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
+    tasks = [Torc.submit(work, x) for x in inputs]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    Torcalia.set_scheduling_policy(:RANDOM)
+    Torc.set_scheduling_policy(:RANDOM)
 
-    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torcalia.get_scheduling_policy()).")
+    println("\n[MPI Rank: $(Torc.node_id())] Submitting $ntasks tasks. Scheduling policy: $(Torc.get_scheduling_policy()).")
 
-    tasks = [Torcalia.submit(work, x) for x in inputs]
+    tasks = [Torc.submit(work, x) for x in inputs]
     
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 
-    println("\n[MPI Rank: $(Torcalia.node_id())] Submitting $ntasks tasks with custom scheduling policy.")
+    println("\n[MPI Rank: $(Torc.node_id())] Submitting $ntasks tasks with custom scheduling policy.")
 
-    tasks = [Torcalia.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
+    tasks = [Torc.submit(work, x; distribution_policy = (custom_scheduling_policy, x)) for x in inputs]
 
-    Torcalia.wait(tasks)
+    Torc.wait(tasks)
 
-    @assert all(Torcalia.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
+    @assert all(Torc.result(task) == inputs[i]^2 for (i, task) in enumerate(tasks))
 end
 
-Torcalia.init(main)
+Torc.init(main)
