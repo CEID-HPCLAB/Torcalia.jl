@@ -179,7 +179,7 @@ git clone https://github.com/CEID-HPCLAB/Torcalia.jl.git
 cd Torcalia.jl
 ```
 > [!IMPORTANT]
-> Before installing `Torcalia`, ensure that Julia (`version 1.11` or later) is installed on your system.
+> `Torcalia` has been tested with Julia `version 1.11` and `1.12`. Ensure that one of these versions is installed on your system before proceeding.
 
 ### Dependencies
 
@@ -465,7 +465,7 @@ Arguments may include *futures* referring to the results of previously submitted
 > [!NOTE] 
 > Explicit synchronization between tasks is provided through high-level functions, enabling users to precisely coordinate task execution when required. Execution parameters, such as *processor affinity* and *priority level*, can also be specified in task submissions, providing fine-grained control over task scheduling.
 
-As shown in **Figure 1**, the runtime engine of `Torcalia` is based on a symmetric P2P model, on top of which an **MPI+X** parallelism scheme is employed for the concurrent execution of tasks. Inter-node communication relies on the [MPI.jl](https://github.com/JuliaParallel/MPI.jl), which provides Julia bindings for MPI, while intra-node parallelism is supported by Julia's [Threads](https://docs.julialang.org/en/v1/base/multi-threading/#Base.Threads) module. Within each MPI process, inter-thread coordination is achieved through thread-safe queues provided by the [ConcurrentCollections.jl](https://github.com/JuliaConcurrent/ConcurrentCollections.jl). 
+As shown in **Figure 1**, the runtime engine of `Torcalia` is based on a decentralized model, on top of which an **MPI+X** parallelism scheme is employed for the concurrent execution of tasks. Inter-node communication relies on the [MPI.jl](https://github.com/JuliaParallel/MPI.jl), which provides Julia bindings for MPI, while intra-node parallelism is supported by Julia's [Threads](https://docs.julialang.org/en/v1/base/multi-threading/#Base.Threads) module. Within each MPI process, inter-thread coordination is achieved through thread-safe queues provided by the [ConcurrentCollections.jl](https://github.com/JuliaConcurrent/ConcurrentCollections.jl). 
 
 <p align = "center">
   <picture>
@@ -499,7 +499,7 @@ Using MPI-2 dynamic process management routines, the number of MPI processes can
 
 ### Task Scheduling
 
-Upon submission, a scheduling policy determines the MPI rank to which each task is assigned (see [Task Scheduling Policies](#task-scheduling-policies)). Multiple policies are provided, including *round-robin* and *weighted round-robin*. User-defined policies are also supported, allowing application-specific knowledge to be incorporated into runtime decisions. 
+Upon task submission, a scheduling policy determines the MPI rank to which each task is assigned (see [Task Scheduling Policies](#task-scheduling-policies)). Multiple policies are provided, including *round-robin* and *weighted round-robin*. User-defined policies are also supported, allowing application-specific knowledge to be incorporated into runtime decisions. 
 
 Each MPI rank maintains *hierarchical task queues* ❹, into which the assigned ready-to-run tasks are placed according to their priority and spawning level. 
 
