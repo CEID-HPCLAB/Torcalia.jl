@@ -11,6 +11,7 @@
 
 # Torcalia.jl: An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
 
+[![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.24469593.svg)](https://doi.org/10.5281/zenodo.24469593)
 [![Release](https://img.shields.io/github/v/release/CEID-HPCLAB/Torcalia.jl?color=orange)](https://github.com/CEID-HPCLAB/Torcalia.jl/releases/tag/v0.1.0)
 [![License](https://img.shields.io/badge/License-MIT-FFDEAD)](https://opensource.org/licenses/MIT)<br>
 [![Julia](https://img.shields.io/badge/Julia-1.12-purple?logo=julia&logoColor=white)](https://julialang.org)
