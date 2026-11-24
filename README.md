@@ -11,6 +11,7 @@
 
 # Torcalia.jl: An MPI-based Runtime System for Asynchronous Task Parallelism in Julia
 
+[![arXiv](https://img.shields.io/badge/arXiv-2611.30776-b31b1b.svg)](https://arxiv.org/abs/2611.30776)
 [![Zenodo](https://zenodo.org/badge/DOI/10.5281/zenodo.24469593.svg)](https://doi.org/10.5281/zenodo.24469593)
 [![Release](https://img.shields.io/github/v/release/CEID-HPCLAB/Torcalia.jl?color=orange)](https://github.com/CEID-HPCLAB/Torcalia.jl/releases/tag/v0.1.0)
 [![License](https://img.shields.io/badge/License-MIT-FFDEAD)](https://opensource.org/licenses/MIT)<br>
@@ -22,6 +23,7 @@
 
 By combining intra-node **work sharing** with inter-node **work stealing**, Torcalia provides **adaptive load balancing**, achieving efficient resource utilization across both regular and irregular workloads. Moreover, tasks can be nested arbitrarily, enabling applications to exploit **multiple levels** of parallelism, while the runtime engine can dynamically switch to the native Single Program Multiple Data (SPMD) programming model for direct integration of MPI code. Beyond the task-based paradigm, Torcalia supports **skeletal programming**, offering high-level abstractions that facilitate the implementation of parallel applications at scale.
 
+> For a detailed description of the AMT programming model, runtime architecture, and implementation of `Torcalia.jl` please refer to our [preprint](https://arxiv.org/pdf/2611.30776).
 
 ## Table of Contents
 - [Overview](#overview)
